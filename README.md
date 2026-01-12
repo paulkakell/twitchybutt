@@ -13,26 +13,6 @@ TwitchyButt is a lightweight static website that curates passive and low effort 
 
 This repository is configured for **project-based GitHub Pages**.
 
-Steps:
-1. Push the repository to GitHub  
-2. Go to **Settings → Pages**  
-3. Set source to the `main` branch and root directory  
-4. Save and wait for deployment  
-
-No Jekyll configuration is required.
-
-## Local Preview
-
-You can open `index.html` directly in a browser, or serve it locally:
-
-```bash
-python -m http.server
-```
-
-Then visit:
-```
-http://localhost:8000
-```
 
 ## Project Structure
 
