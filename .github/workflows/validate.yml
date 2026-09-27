@@ -172,9 +172,10 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
           name: security-${{ github.sha }}
           path: build
+          digest-mismatch: error
       - name: Require complete current release approval
         run: python3 -B scripts/security_gate.py --evidence build/security-evidence.json --commit "$(git rev-parse HEAD)" --version "$(cat VERSION)"
