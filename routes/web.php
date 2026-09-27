@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AccountSecurityController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PostController;
@@ -14,6 +15,10 @@ Route::get('/', [PostController::class, 'index']);
 Route::get('/posts/{post}', [PostController::class, 'show'])->whereNumber('post');
 Route::view('/report', 'report');
 Route::post('/report', [ReportController::class, 'store'])->middleware('throttle:reports');
+Route::view('/forgot-password', 'password-forgot')->name('password.request');
+Route::post('/forgot-password', [AccountSecurityController::class, 'forgot'])->middleware('throttle:recovery')->name('password.email');
+Route::get('/reset-password', [AccountSecurityController::class, 'resetForm'])->name('password.reset');
+Route::post('/reset-password', [AccountSecurityController::class, 'reset'])->middleware('throttle:reset')->name('password.update');
 Route::middleware('guest')->group(function (): void {
     Route::view('/login', 'auth', ['mode' => 'login'])->name('login');
     Route::view('/register', 'auth', ['mode' => 'register']);
@@ -22,6 +27,9 @@ Route::middleware('guest')->group(function (): void {
 });
 Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/account/security', [AccountSecurityController::class, 'settings'])->name('verification.notice');
+    Route::post('/email/verification-notification', [AccountSecurityController::class, 'resend'])->middleware('throttle:verification');
+    Route::get('/email/verify/{id}/{hash}/{generation}', [AccountSecurityController::class, 'verify'])->whereNumber(['id', 'generation'])->middleware(['signed:relative', 'throttle:10,1'])->name('verification.verify');
     Route::get('/account', function (Request $request) {
         return view('account', ['invoices' => Invoice::query()->where('user_id', $request->user()->getAuthIdentifier())->latest()->paginate(15)]);
     });

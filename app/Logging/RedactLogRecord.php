@@ -9,6 +9,8 @@ final class RedactLogRecord
     private const EVENTS = [
         'cms.member.registered', 'cms.admin.created', 'cms.post.created',
         'cms.post.updated', 'cms.report.received', 'cms.invoice.quoted', 'cms.exception',
+        'cms.mail.failed', 'cms.mail.enqueue_failed', 'cms.mail.queued', 'cms.mail.processed',
+        'cms.email.verified', 'cms.password.reset',
     ];
 
     public function __invoke(LogRecord $record): LogRecord

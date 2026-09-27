@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "version": "00.04.00",
+  "version": "00.05.00",
   "maximum_allowed_severity": "low",
   "findings": [],
   "reviews": {
