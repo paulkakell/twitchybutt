@@ -20,6 +20,7 @@ class PostPolicy
         if ($post->price_units === 0) {
             return true;
         }
+
         return $user !== null && Entitlement::query()
             ->where('user_id', $user->id)->where('post_id', $post->id)
             ->whereNull('revoked_at')

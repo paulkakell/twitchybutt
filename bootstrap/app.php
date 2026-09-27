@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->report(function (Throwable $exception): bool {
             // Deliberately exclude messages, bindings, URLs and traces that may contain private content.
             Log::error('cms.exception', ['exception_type' => $exception::class]);
+
             return false;
         });
     })->create();

@@ -26,6 +26,7 @@ class PostController
         if (! Gate::allows('manage-content')) {
             abort_unless($post->status === 'published' && $post->classification === 'general', 404);
         }
+
         return view('post', ['post' => $post, 'canRead' => Gate::allows('view', $post)]);
     }
 
@@ -34,6 +35,7 @@ class PostController
         Gate::authorize('manage-content');
         $post = Post::query()->create($this->validated($request));
         Log::info('cms.post.created', ['post_id' => $post->id, 'actor_id' => $request->user()?->getAuthIdentifier()]);
+
         return redirect('/studio')->with('status', 'Post saved.');
     }
 
@@ -42,6 +44,7 @@ class PostController
         Gate::authorize('manage-content');
         $post->fill($this->validated($request))->save();
         Log::info('cms.post.updated', ['post_id' => $post->id, 'actor_id' => $request->user()?->getAuthIdentifier()]);
+
         return redirect('/studio')->with('status', 'Post updated.');
     }
 
@@ -62,6 +65,7 @@ class PostController
         } catch (InvalidArgumentException $exception) {
             throw ValidationException::withMessages(['price' => $exception->getMessage()]);
         }
+
         return ['title' => $data['title'], 'body' => $data['body'], 'classification' => $data['classification'], 'status' => $data['status'], 'price_units' => $units];
     }
 }

@@ -23,6 +23,7 @@ class CmsTest extends TestCase
         $user = new User(['name' => 'Reader', 'email' => Str::uuid().'@example.test', 'password' => 'ExamplePassword123']);
         $user->is_admin = $admin;
         $user->save();
+
         return $user;
     }
 
@@ -134,7 +135,8 @@ class CmsTest extends TestCase
 
     public function test_live_entitlement_allows_access_while_payments_disabled(): void
     {
-        $post = $this->makePost(); $user = $this->makeUser();
+        $post = $this->makePost();
+        $user = $this->makeUser();
         (new Entitlement)->forceFill(['user_id' => $user->id, 'post_id' => $post->id, 'expires_at' => now()->addDay()])->save();
         $this->actingAs($user)->get('/posts/'.$post->id)->assertSee('PRIVATE_BODY_MARKER');
         self::assertFalse(config('cms.payments_enabled'));
@@ -142,7 +144,8 @@ class CmsTest extends TestCase
 
     public function test_expired_and_revoked_entitlements_do_not_unlock(): void
     {
-        $post = $this->makePost(); $user = $this->makeUser();
+        $post = $this->makePost();
+        $user = $this->makeUser();
         $entitlement = new Entitlement;
         $entitlement->forceFill(['user_id' => $user->id, 'post_id' => $post->id, 'expires_at' => now()->subSecond()])->save();
         $this->actingAs($user)->get('/posts/'.$post->id)->assertDontSee('PRIVATE_BODY_MARKER');
@@ -152,14 +155,17 @@ class CmsTest extends TestCase
 
     public function test_entitlement_never_bypasses_restricted_classification(): void
     {
-        $post = $this->makePost(['classification' => 'restricted']); $user = $this->makeUser();
+        $post = $this->makePost(['classification' => 'restricted']);
+        $user = $this->makeUser();
         (new Entitlement)->forceFill(['user_id' => $user->id, 'post_id' => $post->id])->save();
         $this->actingAs($user)->get('/posts/'.$post->id)->assertNotFound();
     }
 
     public function test_invoice_uses_server_price_and_fee_and_is_idempotent(): void
     {
-        $post = $this->makePost(); $user = $this->makeUser(); $key = (string) Str::uuid();
+        $post = $this->makePost();
+        $user = $this->makeUser();
+        $key = (string) Str::uuid();
         $this->actingAs($user);
         for ($i = 0; $i < 2; $i++) {
             $this->post('/posts/'.$post->id.'/invoices', ['idempotency_key' => $key, 'gross_units' => 1, 'fee_bps' => 0, 'status' => 'paid'])->assertRedirect();
@@ -177,7 +183,9 @@ class CmsTest extends TestCase
 
     public function test_invoice_snapshot_survives_price_change(): void
     {
-        $post = $this->makePost(); $user = $this->makeUser(); $key = (string) Str::uuid();
+        $post = $this->makePost();
+        $user = $this->makeUser();
+        $key = (string) Str::uuid();
         $service = app(InvoiceService::class);
         $invoice = $service->create($user, $post, $key);
         $post->update(['price_units' => 50000000]);
@@ -188,7 +196,9 @@ class CmsTest extends TestCase
 
     public function test_idempotency_key_cannot_be_reused_for_different_post(): void
     {
-        $post = $this->makePost(); $other = $this->makePost(); $key = (string) Str::uuid();
+        $post = $this->makePost();
+        $other = $this->makePost();
+        $key = (string) Str::uuid();
         $this->actingAs($this->makeUser());
         $this->post('/posts/'.$post->id.'/invoices', ['idempotency_key' => $key])->assertRedirect();
         $this->post('/posts/'.$other->id.'/invoices', ['idempotency_key' => $key])->assertStatus(409);

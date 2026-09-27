@@ -19,6 +19,7 @@ class ReportController
         ]);
         $report = Report::query()->create($data);
         Log::info('cms.report.received', ['report_id' => $report->getKey()]);
+
         return redirect('/report')->with('status', 'Report received by this site operator.');
     }
 }

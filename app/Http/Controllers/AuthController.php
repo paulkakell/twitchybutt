@@ -24,6 +24,7 @@ class AuthController
         Auth::login($user);
         $request->session()->regenerate();
         Log::info('cms.member.registered', ['actor_id' => $user->id]);
+
         return redirect('/account');
     }
 
@@ -34,6 +35,7 @@ class AuthController
             throw ValidationException::withMessages(['email' => 'The supplied credentials could not be verified.']);
         }
         $request->session()->regenerate();
+
         return redirect('/account');
     }
 
@@ -42,6 +44,7 @@ class AuthController
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return redirect('/');
     }
 }

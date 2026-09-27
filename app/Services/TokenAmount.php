@@ -7,8 +7,11 @@ use InvalidArgumentException;
 final class TokenAmount
 {
     public const DECIMALS = 6;
+
     public const SCALE = 1000000;
+
     public const MAX_UNITS = 1000000000000;
+
     public const FEE_BPS = 200;
 
     public static function parse(string $amount): int
@@ -20,6 +23,7 @@ final class TokenAmount
         if ($units > self::MAX_UNITS || ($units > 0 && $units < 50)) {
             throw new InvalidArgumentException('Use zero for free content, or 0.000050 to 1000000 TEST.');
         }
+
         return $units;
     }
 
@@ -31,6 +35,7 @@ final class TokenAmount
         }
         // Floor the fee to the smallest token unit; the creator receives the remainder.
         $fee = intdiv($gross * self::FEE_BPS, 10000);
+
         return ['gross' => $gross, 'fee' => $fee, 'creator' => $gross - $fee];
     }
 
@@ -39,6 +44,7 @@ final class TokenAmount
         if ($units < 0 || $units > self::MAX_UNITS) {
             throw new InvalidArgumentException('Amount outside the supported range.');
         }
+
         return intdiv($units, self::SCALE).'.'.str_pad((string) ($units % self::SCALE), self::DECIMALS, '0', STR_PAD_LEFT);
     }
 }

@@ -18,12 +18,14 @@ class InvoiceController
         $user = $request->user();
         abort_unless($user instanceof User, 401);
         $invoice = $service->create($user, $post, strtolower($data['idempotency_key']));
+
         return redirect('/invoices/'.$invoice->id);
     }
 
     public function show(Request $request, Invoice $invoice): View
     {
         abort_unless($invoice->user_id === $request->user()?->getAuthIdentifier(), 404);
+
         return view('invoice', ['invoice' => $invoice]);
     }
 }

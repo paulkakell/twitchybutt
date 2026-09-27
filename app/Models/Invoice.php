@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use LogicException;
 
 /**
@@ -15,12 +16,14 @@ use LogicException;
  * @property int $creator_units
  * @property string $token
  * @property string $status
- * @property \Illuminate\Support\Carbon $expires_at
+ * @property Carbon $expires_at
  */
 class Invoice extends Model
 {
     public $incrementing = false;
+
     protected $keyType = 'string';
+
     protected $guarded = ['*'];
 
     protected function casts(): array

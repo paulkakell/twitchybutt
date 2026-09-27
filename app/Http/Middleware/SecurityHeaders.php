@@ -26,6 +26,7 @@ class SecurityHeaders
         if ($request->isSecure()) {
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000');
         }
+
         return $response;
     }
 }

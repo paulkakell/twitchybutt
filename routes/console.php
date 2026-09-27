@@ -15,13 +15,17 @@ Artisan::command('cms:admin {--email= : Administrator email address}', function 
         'password' => ['required', 'confirmed', 'max:72', Password::min(12)->letters()->numbers()],
     ]);
     if ($validator->fails()) {
-        foreach ($validator->errors()->all() as $error) { $this->error($error); }
+        foreach ($validator->errors()->all() as $error) {
+            $this->error($error);
+        }
+
         return 1;
     }
     $user = new User(['name' => 'Creator', 'email' => $email, 'password' => $password]);
     $user->is_admin = true;
     $user->save();
     $this->info('Administrator created. No credentials were written to logs.');
+
     return 0;
 })->purpose('Provision an administrator locally; passwords are prompted and never command arguments.');
 
@@ -34,8 +38,15 @@ Artisan::command('cms:doctor', function (): int {
         '64_bit_php' => PHP_INT_SIZE === 8,
         'storage_writable' => is_writable(storage_path('framework/sessions')),
     ];
-    try { DB::select('select 1'); $checks['database'] = true; }
-    catch (Throwable) { $checks['database'] = false; }
-    foreach ($checks as $name => $passed) { $this->line($name.': '.($passed ? 'PASS' : 'FAIL')); }
+    try {
+        DB::select('select 1');
+        $checks['database'] = true;
+    } catch (Throwable) {
+        $checks['database'] = false;
+    }
+    foreach ($checks as $name => $passed) {
+        $this->line($name.': '.($passed ? 'PASS' : 'FAIL'));
+    }
+
     return in_array(false, $checks, true) ? 1 : 0;
 })->purpose('Check configuration without printing secrets.');
