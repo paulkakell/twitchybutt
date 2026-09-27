@@ -1,0 +1,106 @@
+name: Application validation
+on:
+  push:
+    branches: ["main", "build/00.03.00"]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: validation-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  validate:
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [sqlite, pgsql]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16@sha256:1a6ab3f5345eb6dbe04a1349529caabdb0ab09293a09590fad07b2246bfa4b54
+        env:
+          POSTGRES_DB: twitchybutt
+          POSTGRES_USER: twitchybutt
+          POSTGRES_PASSWORD: ci-only-not-a-production-secret
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U twitchybutt -d twitchybutt" --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      APP_ENV: testing
+      APP_DEBUG: 'false'
+      APP_KEY: base64:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+      DB_CONNECTION: ${{ matrix.database }}
+      DB_DATABASE: ${{ matrix.database == 'sqlite' && '/tmp/twitchybutt-ci.sqlite' || 'twitchybutt' }}
+      DB_HOST: 127.0.0.1
+      DB_PORT: '5432'
+      DB_USERNAME: twitchybutt
+      DB_PASSWORD: ci-only-not-a-production-secret
+      SESSION_DRIVER: file
+      SESSION_SECURE_COOKIE: 'false'
+      CACHE_STORE: file
+      CMS_PAYMENTS_ENABLED: 'false'
+      CMS_RESTRICTED_PUBLISHING_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Fresh locked installation
+        run: |
+          set -eu
+          echo "TESTED_COMMIT=$(git rev-parse HEAD)"
+          php --version
+          composer --version
+          test -f composer.lock
+          php scripts/prepare.php
+          cp .env.example .env
+          if [ "$DB_CONNECTION" = sqlite ]; then touch "$DB_DATABASE"; fi
+          composer validate --strict
+          composer install --no-interaction --prefer-dist
+          composer check-platform-reqs
+      - name: Dependency vulnerability audit and license inventory
+        run: |
+          set -eu
+          composer audit --locked --no-interaction
+          composer licenses --format=json > build/dependency-licenses.json
+      - name: PHP syntax, style, type analysis and targeted source checks
+        run: |
+          set -eu
+          find app bootstrap config database routes scripts tests public -name '*.php' -not -name '*.blade.php' -print0 | xargs -0 -n1 php -l
+          vendor/bin/pint --test
+          vendor/bin/phpstan analyse --memory-limit=1G --no-progress
+          python3 scripts/security_scan.py
+      - name: Migration forward, rollback and forward again
+        run: |
+          set -eu
+          php artisan migrate --force
+          php artisan migrate:rollback --force
+          php -r 'require "vendor/autoload.php"; $a=require "bootstrap/app.php"; $a->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); if(Illuminate\Support\Facades\Schema::hasTable("users")){exit(1);}'
+          php artisan migrate --force
+          php artisan cms:doctor
+      - name: Unit, integration, regression and integer performance tests
+        run: vendor/bin/phpunit --log-junit build/junit.xml
+      - name: Compile configuration, routes and templates
+        run: |
+          set -eu
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
+          php artisan config:clear
+          php artisan route:clear
+          php artisan view:clear
+      - name: Real HTTP session and CSRF smoke test
+        run: |
+          set -eu
+          APP_ENV=local php artisan serve --host=127.0.0.1 --port=8765 > build/server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          python3 scripts/http_smoke.py
+      - name: Validate locked production dependency install
+        run: |
+          set -eu
+          rm -rf vendor
+          composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+          composer check-platform-reqs --no-dev
+          php artisan cms:doctor
+          git diff --exit-code

@@ -1,15 +1,65 @@
 # TwitchyButt CMS
 
-Content-neutral, self-hosted creator commerce with support for lawful adult content and cryptocurrency payments.
+Version **00.03.00**. Self-hosted, content-neutral creator software. **Development preview, not a production platform.**
 
-## Status
+Creators operate their own application and database. No central content hosting is implemented. The intended payment flow allocates a 2% licensing fee; this release only calculates **TEST invoice quotes**. No wallet is connected, no funds are accepted, and quotes never unlock paid content.
 
-Requirements baseline: **00.02.00**. Application development is beginning on a separate branch for **00.03.00**. This baseline is not runnable software and must not receive real payments or host restricted content.
+## Run a local preview
 
-Each creator controls their own site, database, media, and backups. The intended supported checkout allocates a 2% licensing fee. This does not make the fee unavoidable on modified self-hosted installations.
+Use an isolated development machine with 64-bit PHP 8.3+, Composer 2, PDO SQLite, mbstring, XML/DOM, ctype, fileinfo and OpenSSL. PostgreSQL also requires pdo_pgsql. Composer checks the locked package requirements.
 
-## Development controls
+```sh
+git clone --branch build/00.03.00 https://github.com/paulkakell/twitchybutt.git
+cd twitchybutt
+cp .env.example .env
+php scripts/prepare.php
+composer install
+php artisan key:generate
+php artisan migrate
+php artisan cms:admin --email=creator@example.com
+php artisan cms:doctor
+php artisan serve --host=127.0.0.1 --port=8000
+```
 
-Every application release must include versioned code, dependency locks, tests, static analysis, security review, build verification, migration/rollback instructions, and release notes. No production payment configuration or treasury address has been approved.
+Administrator provisioning prompts for a password and confirmation. No default administrator or password exists. Existing members are not silently promoted. Passwords require at least 12 characters with letters and numbers and at most 72 UTF-8 bytes; null bytes are rejected. Keep `.env`, the database, sessions and logs private. The development server is not a public deployment solution. Only `public/` may be a web document root.
 
-Copyright remains with the project owner. No open-source or commercial production-use license is granted by this baseline; license terms remain an explicit release gate.
+## Implemented features and examples
+
+**Accounts:** register at `/register`, sign in at `/login`, and sign out with the form. Members cannot access `/studio`. Email verification, password recovery and MFA are not implemented.
+
+**Publishing:** visit `/studio/posts/new`, enter plain text, choose `general` and `published`, and use price `0` for open access. Drafts stay private. Edit and unpublish posts through the studio. HTML is escaped; media uploads are not included.
+
+**Classification:** `general`, `restricted`, or `unclassified`. Restricted and unclassified posts can be saved as private drafts but cannot be published, including through forged requests. These labels are not legal exemptions.
+
+**Paid access:** price `20` creates a locked general post. Reading requires a valid, unexpired, unrevoked entitlement. No HTTP endpoint grants entitlements in this release; test fixtures are not payment evidence. Existing valid access does not depend on a licensing service.
+
+**Invoice previews:** signed-in members can request a quote for a published general paid post. For 20 TEST, the server records 20.000000 total, 0.400000 fee, and 19.600000 creator allocation. Browser-supplied prices, fees and payment status are ignored. Duplicate buyer/idempotency keys return the original snapshot; reuse for another post returns 409. Quotes are visible only to their buyer and do not initiate payments.
+
+**Reports:** `/report` accepts text reports without an account; administrators read them at `/studio/reports`. No attachments, emergency response, notifications or complete statutory case workflow are implemented.
+
+**Diagnostics:** `/up` is liveness only. `php artisan cms:doctor` checks configuration and database connectivity without printing secrets. Structured JSON logs retain event names and IDs rather than post bodies or credentials.
+
+## Configuration and validation
+
+See `.env.example` and `docs/OPERATIONS.md` for every exposed setting and examples. Both `CMS_PAYMENTS_ENABLED` and `CMS_RESTRICTED_PUBLISHING_ENABLED` are false-only reserved flags: setting either true prevents startup. Production mode rejects debugging, insecure cookies and ephemeral session/cache stores; this does not certify production readiness.
+
+```sh
+composer validate --strict
+composer audit --locked
+vendor/bin/pint --test
+vendor/bin/phpstan analyse --memory-limit=1G
+vendor/bin/phpunit
+python3 scripts/security_scan.py
+```
+
+Run tests only against disposable databases. CI checks fresh SQLite/PostgreSQL installations, dependency advisories, syntax/style/types, source guardrails, migrations forward/backward, unit/integration/regression behavior, cached builds, real HTTP/CSRF behavior and small performance budgets. Test configuration isolates cache/session state from runner variables.
+
+The one-time dependency-lock generation jobs have been removed. Current CI has repository read permission only and installs from composer.lock. Failed runs and corrections are documented in `docs/VALIDATION_HISTORY.md`; a planned check is not a pass. Actual final results are in the pull request and the Drive build report.
+
+## Remaining release gates
+
+No real or testnet transfers, split contract, production token/network, treasury address, subscriptions/automatic renewals, refunds/taxes, media pipeline, performer/viewer verification, statutory case automation, email/reset/MFA, turnkey deployment/upgrades/backups or final commercial license is implemented or approved. Do not accept customer funds or publish restricted content with this preview.
+
+See `CHANGELOG.md`, `docs/ARCHITECTURE.md`, `docs/OPERATIONS.md`, `docs/SECURITY.md`, and `docs/RELEASE_00.03.00.md`. Tracking issue: #1. Main remains the previous baseline pending review; no release tag has been created.
+
+Copyright remains with the project owner. Public visibility does not grant an open-source or commercial-use license. Third-party packages retain their own licenses; use `composer licenses` to inventory them.
