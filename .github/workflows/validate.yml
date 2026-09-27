@@ -54,14 +54,7 @@ jobs:
           python3 -B -m unittest discover -s tests/roadmap -v
           python3 -B -m unittest discover -s tests/security -v
       - name: Media worker prerequisites
-        run: |
-          set -eu
-          php -r 'if (!extension_loaded("gd") || !extension_loaded("pcntl")) { fwrite(STDERR, "Media test prerequisites missing.\n"); exit(1); }'
-          command -v ffmpeg
-          command -v ffprobe
-          ffmpeg -version > build/media-tools.txt
-          ffprobe -version >> build/media-tools.txt
-          php -r 'echo "GD: ".json_encode(gd_info()).PHP_EOL;' >> build/media-tools.txt
+        run: bash scripts/ci_media_prerequisites.sh
       - name: Fresh locked installation
         run: |
           set -eu
@@ -149,6 +142,7 @@ jobs:
             build/media-http.json
             build/media-quota.json
             build/media-tools.txt
+            build/media-packages.txt
           retention-days: 30
           if-no-files-found: error
   security:
