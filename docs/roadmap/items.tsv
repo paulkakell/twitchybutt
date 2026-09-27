@@ -1,0 +1,101 @@
+ID	Item	Milestone	Priority	Status	Dependencies	Acceptance criteria
+TB-001	Member signup, login and logout	M00	P1	Implemented		Registration cannot choose admin role; session logout and password hashing are covered by tests.
+TB-002	Local administrator provisioning	M00	P1	Implemented	TB-001	CLI prompts for credentials and refuses implicit promotion of an existing member.
+TB-003	Creator studio and text publishing	M00	P1	Implemented	TB-002	General posts can publish; drafts remain private and output escapes HTML.
+TB-004	Paid-body access policies	M00	P1	Implemented	TB-003	Expired or revoked access fails; unauthorized HTML omits the body; access is independent of a licensing outage.
+TB-005	Integer 2% TEST invoice quotes	M00	P1	Implemented	TB-004	A 20 TEST quote produces 0.4 licensing and 19.6 creator; duplicate requests preserve the snapshot; no settlement.
+TB-006	Public reports and private inbox	M00	P1	Implemented	TB-002	Text reports are validated and throttled; only administrators can read the inbox.
+TB-007	Database, configuration and structured logging	M00	P1	Implemented		SQLite/PostgreSQL migrations and doctor command work; application logs are creator-local JSON.
+TB-008	Initial automated validation	M00	P1	Implemented	TB-001; TB-002; TB-003; TB-004; TB-005; TB-006; TB-007	56 tests pass in both CI database jobs; fresh/no-dev installs, lint, static types, migrations and HTTP smoke passed.
+TB-009	Email delivery and verification	M01	P1	Planned	TB-001	Signed expiring verification links, resend limits, mail failure tests and provider configuration examples exist.
+TB-010	Password reset and session invalidation	M01	P0	Planned	TB-009	One-use expiring reset tokens, generic responses, throttling and session invalidation tests pass.
+TB-011	Administrator MFA and recovery codes	M01	P0	Planned	TB-010	MFA enrollment requires recent authentication; recovery codes are single-use; recovery and lockout tested.
+TB-012	Device and session management	M01	P1	Planned	TB-001	Session rotation, idle/absolute timeouts and logout-all work; cookies and CSRF survive regression tests.
+TB-013	Authorization threat model	M01	P0	Planned	TB-004; TB-006	Document assets/trust boundaries; test direct object access, mass assignment, escalation and cross-account access.
+TB-014	CI security and dependency gates	M01	P0	Planned	TB-008	Run maintained SAST, dependency, secret and image scans; fail above Low; record false-positive review and remediation.
+TB-015	Retained validation artifacts and traceability	M01	P1	Planned	TB-008	Retain test reports, audit results, SBOM, dependency licenses and commit-linked build provenance without secrets.
+TB-016	Runtime log redaction tests	M01	P0	Planned	TB-007	Inject secrets, credentials, emails and report text into error paths; assert logs do not contain them.
+TB-017	Privacy settings and data lifecycle	M01	P1	Planned	TB-001; TB-006	Document data inventory and configured retention; test deletion exceptions and export access boundaries.
+TB-018	Health, readiness and local metrics	M01	P1	Planned	TB-007	Readiness checks DB/storage/queue without secrets; local metrics expose actionable errors and latency.
+TB-019	Browser accessibility and responsive QA	M01	P1	Planned	TB-003	Test key journeys on desktop/mobile, keyboard focus, labels, contrast and screen-reader announcements.
+TB-020	Installation security defaults	M01	P0	Planned	TB-013	Document-root, host validation, TLS/proxy, permissions and production configuration tests fail safely.
+TB-021	Approve token, network and service providers	M02	P0	Planned	TB-013	Record token/network identifiers, finality assumptions, costs and provider content policies; resolve DEC-01/DEC-02/DEC-03.
+TB-022	Define fee base, rounding and refunds	M02	P0	Planned	TB-005	Approve fee/tax/refund examples including tiny values, tips and partial refunds; decide refund funding in DEC-04/DEC-05.
+TB-023	Signed, bound and expiring invoices	M02	P0	Planned	TB-021; TB-022	Bind site, payer, creator, token, chain, contract, amount, nonce and expiry; reject tampering and replay.
+TB-024	Atomic 98/2 split contract	M02	P0	Planned	TB-023	All transfers succeed or revert; checked token behavior, rounding invariants, reentrancy and unauthorized mutation tested.
+TB-025	Wallet connection and transaction preview	M02	P1	Planned	TB-023	Show chain/token, total, network costs and recipients; request no seed phrase; reject wrong network or changed wallet.
+TB-026	Confirmation verifier and finality handling	M02	P0	Planned	TB-024; TB-025	Independently verify chain, contract, invoice, token, payer, amounts, receipt success and finality; handle reorgs.
+TB-027	Settlement ledger and exactly-once access	M02	P0	Planned	TB-026; TB-004	Persist verified transaction/log identity and ledger entries atomically; retries and concurrency preserve one grant.
+TB-028	Reconciliation and failed-payment recovery	M02	P0	Planned	TB-027	Handle under/overpayment, expired invoice, duplicate transfer and RPC outage; reconcile chain, ledger and entitlement.
+TB-029	Licensing service and installation identity	M02	P1	Planned	TB-023; TB-018	Document minimal metadata, signed install registration, rate limits and outage policy; no content ingestion or balances.
+TB-030	Treasury and payout-change controls	M02	P0	Planned	TB-011; TB-024	Require authenticated dual review where configured; validate public addresses, audit changes and define lost-key recovery.
+TB-031	Refund execution and licensing adjustment	M02	P0	Planned	TB-022; TB-027	Implement explicit authorization, both-share funding, partial-refund accounting and access policy; reconcile transfers.
+TB-032	Accounting export and tax adapters	M02	P1	Planned	TB-022; TB-027	Separate sales, taxes, fees, gas and refunds; record currency/time valuation source; jurisdiction rules are configurable and reviewed.
+TB-033	End-to-end sandbox failure testing	M02	P0	Planned	TB-026; TB-027; TB-028; TB-031	Test browser-to-contract-to-entitlement on approved test network; include RPC failures, replay, reorg and interrupted workers.
+TB-034	Independent contract review and remediation	M02	P0	Planned	TB-024; TB-030; TB-033	Independent audit evidence names deployed bytecode/commit; remediate every finding above Low before mainnet approval.
+TB-035	Creator-controlled private object storage	M03	P0	Planned	TB-020	Private-by-default bucket checks, tenant-scoped keys, encryption and credential rotation pass; no licensor media proxy.
+TB-036	Resumable image and video uploads	M03	P1	Planned	TB-035	Validate type/signature/size, enforce quotas and resume/abort multipart uploads without orphaned public files.
+TB-037	Quarantine and file-safety inspection	M03	P0	Planned	TB-036	Quarantine new files, isolate scanners, reject active/unsupported content and test spoofed MIME and archive abuse.
+TB-038	Isolated transcoding workers	M03	P1	Planned	TB-037	Resource limits, supported outputs, retries and failed-job handling tested; originals and derivatives stay creator-controlled.
+TB-039	Authorized media delivery	M03	P0	Planned	TB-035; TB-004	Short-lived authorization, range requests, cache isolation and expired/revoked entitlement checks cover originals and derivatives.
+TB-040	Video player and playback accessibility	M03	P1	Planned	TB-038; TB-039	Adaptive playback, seeking, captions, keyboard controls and unsupported-format fallback tested.
+TB-041	Galleries, thumbnails and safe previews	M03	P1	Planned	TB-037; TB-039	No restricted thumbnail leaks; ordering/alt text and derivative access inherit classification and permissions.
+TB-042	Optional personalized watermarks	M03	P1	Planned	TB-038; TB-039	Watermark setting applies to selected outputs; avoid exposing personal fan identifiers; document screen-capture limitations.
+TB-043	Media deletion and cache invalidation	M03	P0	Planned	TB-035; TB-038; TB-039	Delete originals/derivatives and invalidate caches according to retention/hold policy; verify old links fail.
+TB-044	Storage, bandwidth and worker budgets	M03	P1	Planned	TB-036; TB-038; TB-018	Enforce storage/upload quotas; show local usage, queue backlog and cost assumptions; test limit and out-of-space behavior.
+TB-045	Membership plans and prepaid periods	M04	P1	Planned	TB-027	Support plan price/duration, expiry and entitlement mapping; term boundaries and clock handling have tests.
+TB-046	Renewal reminders and cancellation	M04	P1	Planned	TB-045; TB-009	Start with manual crypto renewal; reminders respect consent; cancellation stops future renewal prompts without erasing paid time.
+TB-047	Paid posts, bundles and price snapshots	M04	P1	Planned	TB-005; TB-027; TB-039	Checkout freezes contents/price; access reflects purchased version and approved edit policy; duplicate purchases handled.
+TB-048	Tips and gratuities	M04	P1	Planned	TB-022; TB-027	Tips receive the agreed 2% allocation and receipts; zero/negative/invalid amounts fail; no fake content entitlement.
+TB-049	Member library and purchase history	M04	P1	Planned	TB-045; TB-047; TB-048	Owner-only history, pagination and renewal/refund states match the ledger; no other member records exposed.
+TB-050	Creator sales and licensing dashboard	M04	P1	Planned	TB-028; TB-032; TB-045	Reconcile settled gross, fee, creator allocation and refunds; never count quotes as revenue; export totals agree.
+TB-051	Branding, themes and site profile	M04	P1	Planned	TB-003; TB-019	Editable logo/colors/profile/homepage with accessible defaults; no forced adult branding or injected unsafe markup.
+TB-052	Post scheduling, tags and search	M04	P1	Planned	TB-003; TB-041	Timezone-safe scheduling, tags and search respect classification, publication state and paid-body boundaries.
+TB-053	Notification preferences and digest	M04	P1	Planned	TB-009; TB-045; TB-052	Unsubscribe/consent settings, retries and safe previews work; no restricted content leaks through email or notifications.
+TB-054	Pricing experiments and coupons	M04	P1	Planned	TB-022; TB-047	Discount rules, expiry/use limits and fee basis tested; no negative totals or retroactive price mutation.
+TB-055	Jurisdiction and content-policy assessment	M05	P0	Planned	TB-013	Qualified review covers licensor/site roles, intended markets and actual content; record DEC-06; do not treat labels as exemptions.
+TB-056	Content classification and review	M05	P0	Planned	TB-003; TB-055	Classification changes re-evaluate posts/previews; disputed items hold publication; restrictions follow actual policy rather than a checkbox.
+TB-057	Viewer age-assurance integration	M05	P0	Planned	TB-055; TB-056	Approved provider and jurisdiction rules tested; minimize data; no self-declaration or crypto ownership substitute; fail closed.
+TB-058	Creator and performer verification	M05	P0	Planned	TB-055	Verify every depicted performer with approved provider; retain only permitted proof/records; no automatic transfer to licensor.
+TB-059	Consent and recordkeeping workflow	M05	P0	Planned	TB-058; TB-035	Missing/expired required records block publication; access is audited; retention, corrections and withdrawal workflows reviewed.
+TB-060	Reports, appeals and removal cases	M05	P0	Planned	TB-006; TB-055; TB-043	Account-free notices, validation, deadlines, escalation, preservation, removal/appeal decisions and notification tested.
+TB-061	Duplicate handling and prohibited-content response	M05	P0	Planned	TB-037; TB-060	Approved detection/investigation approach with human review; duplicate removal, false positives and required escalation documented.
+TB-062	Notices, terms and creator responsibility pages	M05	P0	Planned	TB-055; TB-022	Provide editable templates and required disclosures after qualified review; do not claim universal legal compliance.
+TB-063	Restricted previews and outage regression	M05	P0	Planned	TB-056; TB-057; TB-059; TB-060	Test page/API/search/cache/email thumbnails; required checks cannot be bypassed by entitlement or licensing outage.
+TB-064	Content-agnostic product acceptance	M05	P0	Planned	TB-056; TB-062; TB-063; TB-051	Run both general and restricted site journeys; only applicable controls appear; prohibited content is not permitted in any mode.
+TB-065	Approved hosting deployment profiles	M06	P1	Planned	TB-020; TB-044	Document infrastructure/content-policy compatibility and creator-owned billing; supported matrix and minimum resources tested.
+TB-066	Guided first-run installation	M06	P1	Planned	TB-065; TB-051	Wizard covers DB, storage, email, domain and payment setup; secrets remain local; resumes safely after failure.
+TB-067	Domain, DNS and HTTPS onboarding	M06	P1	Planned	TB-065	Explain DNS errors, issue/renew certificates, verify redirects/host validation and support recovery without insecure fallback.
+TB-068	Signed release and upgrade channel	M06	P0	Planned	TB-015; TB-066	Version manifest, signatures and provenance verified; staged update, preflight and unhealthy-release rollback tested.
+TB-069	Automatic creator-owned backups	M06	P0	Planned	TB-035; TB-017	Consistent encrypted backups, retention, key handling and completion alerts work without licensor media storage.
+TB-070	Restore drill and migration portability	M06	P0	Planned	TB-069	Restore into isolated host and verify media, users, access and ledger; record measured recovery time and loss window.
+TB-071	Creator diagnostics and safe support export	M06	P1	Planned	TB-016; TB-018; TB-066	Explain failed jobs/config/storage; generate redacted opt-in diagnostics; test exclusion of secrets, media and personal records.
+TB-072	Operator documentation and guided examples	M06	P1	Planned	TB-066; TB-049; TB-064	Installation, publishing, payments, verification, recovery and every option have tested examples and clear costs.
+TB-073	Private beta onboarding and feedback	M06	P1	Planned	TB-066; TB-067; TB-070; TB-050; TB-064	Agree cohort/consent and sandbox boundaries; observe setup and recovery journeys; triage measured failures into backlog.
+TB-074	Beta performance and cost validation	M06	P1	Planned	TB-073; TB-044	Define workload and budgets first; test concurrency, uploads, video, payment events and DB queries; record p95/errors/costs.
+TB-075	Commercial license and business-role approval	M07	P0	Planned	TB-029; TB-055	Resolve DEC-07/DEC-08; qualified review covers 2% obligation, modification/bypass limits, payment role and termination/export.
+TB-076	Funds-flow, sanctions and market approval	M07	P0	Planned	TB-021; TB-030; TB-075	Qualified review and relevant providers approve exact funds flow and controls; document refund/liability and jurisdiction boundaries.
+TB-077	Independent application security review	M07	P0	Planned	TB-014; TB-034; TB-063; TB-074	Independent testing covers app, contract integration and deployment; verify remediation; no unresolved finding above Low.
+TB-078	Mainnet launch controls	M07	P0	Planned	TB-076; TB-077; TB-033	Approve token/chain/bytecode/treasury public address, signer custody, finality and monitoring; staged funded test requires explicit approval.
+TB-079	Production monitoring and incident exercises	M07	P0	Planned	TB-018; TB-028; TB-071	Alert on failure/lag/backups; test response, notification and safe disablement; retain existing valid access where appropriate.
+TB-080	Production backup and rollback acceptance	M07	P0	Planned	TB-068; TB-070; TB-079	Approve RPO/RTO, restore test and compatible migrations; retain prior artifacts and test rollback under a write-stop plan.
+TB-081	Support policy and 2% unit economics	M07	P1	Planned	TB-073; TB-074	Measure volume, support time and service costs; publish support scope and third-party charges; resolve DEC-09 without speculative revenue claims.
+TB-082	Release acceptance and signed artifacts	M07	P0	Planned	TB-077; TB-078; TB-080; TB-081; TB-064	All applicable checklist evidence approved, user journeys pass, docs match behavior, licenses inventoried and exact commit tagged 01.00.00.
+TB-083	Creator exit and data-export acceptance	M07	P0	Planned	TB-017; TB-049; TB-070; TB-075	Authenticated export covers content, access, transactions and required records; termination preserves lawful access/retention obligations.
+TB-084	Staged launch and post-launch review	M07	P0	Planned	TB-082; TB-083	Define rollout/stop criteria, support coverage and monitoring; review incidents and feed prioritized fixes into the next release.
+TB-085	Site-local search and SEO	M08	P2	Deferred	TB-084; TB-052	Search/sitemaps exclude private/restricted/paywalled bodies; canonical URLs and safe metadata are verified.
+TB-086	Comments, reactions and blocking	M08	P2	Deferred	TB-084; TB-060	Report/block/mute tools, spam controls and moderator permissions ship before public interaction.
+TB-087	Paid messaging without attachments	M08	P2	Deferred	TB-084; TB-048; TB-060	Consent/blocking/reporting, fee allocation and dispute rules tested; attachments remain separately gated.
+TB-088	Optional recurring wallet authorization	M08	P2	Deferred	TB-084; TB-046	Spending caps, expiry, revocation, scheduler, insufficient funds and cancelled-renewal tests pass; independent review required.
+TB-089	Referral and affiliate program	M08	P2	Deferred	TB-084; TB-032	Disclose attribution rules and commissions separately from license fee; review fraud, privacy and accounting.
+TB-090	Site-local analytics and cohort reports	M08	P2	Deferred	TB-084; TB-017	Use minimal data, consent where required and retention controls; metrics reconcile with ledger and published definitions.
+TB-091	Localization and accessibility expansion	M08	P2	Deferred	TB-084; TB-019	Translated flows, time/currency formats, text expansion and assistive-technology journeys tested.
+TB-092	Import tools and migration assistants	M08	P2	Deferred	TB-083	Preview/dry run, duplicate resolution, permission validation and rollback preserve source data; no bypass of other platforms.
+TB-093	Delegated creator team roles	M08	P2	Deferred	TB-084; TB-013	Granular permissions, audit logs and revocation tested; assistants cannot alter treasury or view unnecessary records.
+TB-094	Theme marketplace and customization API	M08	P2	Deferred	TB-084; TB-051	Review signing/sandbox model, compatibility and accessibility; arbitrary server-side plugin execution remains gated.
+TB-095	Additional payment networks and assets	M09	P3	Deferred	TB-084; TB-034	Repeat token, provider, contract, finality, audit and ledger tests for each rail; no automatic cross-chain assumption.
+TB-096	Progressive web app and mobile strategy	M09	P3	Deferred	TB-084; TB-091	Assess distribution/content rules, privacy and support cost before choosing PWA or native apps; no app-store approval assumed.
+TB-097	Creator-hosted livestreaming	M09	P3	Deferred	TB-084; TB-060; TB-074	Plan real-time abuse response, age/access checks, bandwidth budgets and shutdown tools before implementing a pilot.
+TB-098	Fan media attachments	M09	P3	Deferred	TB-086; TB-087; TB-061	Quarantine, consent, restrictions, reporting and deletion tests pass before user-uploaded media is enabled.
+TB-099	Signed extensions and public API	M09	P3	Deferred	TB-084; TB-093	Versioned API, scoped tokens, signatures, sandbox strategy, revocation and compatibility tests reviewed before release.
+TB-100	Optional discovery without media hosting	M09	P3	Deferred	TB-084; TB-075; TB-064	New role/privacy/content review; explicit opt-in and removal; no licensor thumbnails, media, private fan data or hosted previews.

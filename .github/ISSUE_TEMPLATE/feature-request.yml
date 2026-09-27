@@ -1,0 +1,54 @@
+name: Product roadmap item
+description: Propose a feature, improvement or roadmap change.
+title: "[Roadmap] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the problem before the implementation. This repository is public: do not include secrets, wallet private keys, identity documents, customer data or private security reports.
+        A submitted idea is not a delivery commitment. Maintainers assign a stable TB identifier after triage.
+  - type: input
+    id: roadmap-id
+    attributes:
+      label: Existing roadmap or idea ID
+      placeholder: "TB-101, IDEA-001, or leave blank for a new request"
+  - type: textarea
+    id: problem
+    attributes:
+      label: User and problem
+      description: Who needs this and what is difficult today?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe the behavior you would like to add or change.
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Suggested priority
+      options:
+        - "P0: required before the relevant launch"
+        - "P1: core scope"
+        - "P2: later improvement"
+        - "P3: exploratory"
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: What observable result would make this complete? Include examples where possible.
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies, risks and constraints
+      description: Note related TB IDs, security/privacy, content controls, payment or hosting constraints. Unknown is acceptable.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives and supporting evidence
+      description: Optional links, use cases or approaches already considered. Keep private information out.
