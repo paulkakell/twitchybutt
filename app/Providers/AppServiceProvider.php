@@ -20,12 +20,12 @@ class AppServiceProvider extends ServiceProvider
             throw new LogicException('Exact amount calculations require 64-bit PHP.');
         }
         if (config('cms.payments_enabled') || config('cms.restricted_publishing_enabled')) {
-            throw new LogicException('Payment and restricted-publication adapters are not implemented in 00.03.00.');
+            throw new LogicException('Payment and restricted-publication adapters are not implemented in this development preview.');
         }
         if ($this->app->environment('production') && (config('app.debug') || ! config('session.secure') || config('session.driver') === 'array' || config('cache.default') === 'array')) {
             throw new LogicException('Production requires debug off, secure cookies and persistent sessions/rate limits.');
         }
-        Gate::define('manage-content', fn (User $user): bool => $user->is_admin);
+        Gate::define('manage-content', fn (User $user): bool => $user->is_admin === true);
         Gate::policy(Post::class, PostPolicy::class);
         RateLimiter::for('login', function (Request $request): array {
             $input = $request->input('email');

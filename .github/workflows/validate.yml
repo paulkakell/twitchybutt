@@ -139,16 +139,18 @@ jobs:
           mkdir -p build
           composer --version --no-ansi > build/composer-version.txt
           composer audit --locked --no-interaction --format=json > build/audit.json
-      - name: SAST with versioned engine and local rules
+      - name: SAST with pinned engine and local rules
         run: |
           set -eu
-          docker pull semgrep/semgrep:1.178.0
-          IMAGE=$(docker image inspect --format '{{index .RepoDigests 0}}' semgrep/semgrep:1.178.0)
+          IMAGE=semgrep/semgrep:1.178.0@sha256:32e459968daabe7ab86968184a29109b9564aa00392401156f9788452b42786b
+          docker pull "$IMAGE"
           printf '%s\n' "$IMAGE" > build/semgrep-image.txt
           docker run --rm --network=none --read-only --tmpfs /tmp:rw,nosuid,nodev,size=1g -e HOME=/tmp -v "$PWD:/src:ro" -w /src "$IMAGE" semgrep scan --metrics=off --disable-version-check --disable-nosem --strict --jobs=2 --config security/semgrep.yml --json app bootstrap config database routes resources public > build/semgrep.json
       - name: Normalize scanner evidence
         if: always()
-        run: python3 -B scripts/security_evidence.py --commit "$(git rev-parse HEAD)" --version "$(cat VERSION)"
+        run: |
+          python3 -B scripts/security_evidence.py --commit "$(git rev-parse HEAD)" --version "$(cat VERSION)"
+          cat build/security-evidence.json
       - name: Block unresolved above-Low findings
         run: python3 -B scripts/security_gate.py --development --evidence build/security-evidence.json --commit "$(git rev-parse HEAD)" --version "$(cat VERSION)"
       - name: Retain sanitized security evidence
