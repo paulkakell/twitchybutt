@@ -6,13 +6,127 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: validation-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
-  build-environment:
+  initial-lock:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/build/00.03.00'
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    outputs:
+      sha: ${{ steps.commit.outputs.sha }}
     steps:
-      - name: Check PHP and Composer availability
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Generate the first dependency lock only when absent
         run: |
+          set -eu
+          if [ ! -f composer.lock ]; then
+            php scripts/prepare.php
+            cp .env.example .env
+            composer update --no-interaction --prefer-dist --no-scripts
+            vendor/bin/pint
+            composer dump-autoload --no-interaction
+            git config user.name 'TwitchyButt Build'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add composer.lock app bootstrap config database public routes scripts tests
+            git commit -m 'build(00.03.00): lock dependencies and normalize PHP formatting (#1)'
+            git push origin HEAD:build/00.03.00
+          fi
+      - id: commit
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+  validate:
+    needs: initial-lock
+    if: ${{ !cancelled() && (needs.initial-lock.result == 'success' || needs.initial-lock.result == 'skipped') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [sqlite, pgsql]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: twitchybutt
+          POSTGRES_USER: twitchybutt
+          POSTGRES_PASSWORD: ci-only-not-a-production-secret
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      APP_ENV: testing
+      APP_DEBUG: 'false'
+      APP_KEY: base64:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+      DB_CONNECTION: ${{ matrix.database }}
+      DB_DATABASE: ${{ matrix.database == 'sqlite' && '/tmp/twitchybutt-ci.sqlite' || 'twitchybutt' }}
+      DB_HOST: 127.0.0.1
+      DB_PORT: '5432'
+      DB_USERNAME: twitchybutt
+      DB_PASSWORD: ci-only-not-a-production-secret
+      SESSION_DRIVER: file
+      SESSION_SECURE_COOKIE: 'false'
+      CACHE_STORE: file
+      CMS_PAYMENTS_ENABLED: 'false'
+      CMS_RESTRICTED_PUBLISHING_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ needs.initial-lock.outputs.sha || github.sha }}
+          persist-credentials: false
+      - name: Fresh locked installation
+        run: |
+          set -eu
+          echo "TESTED_COMMIT=$(git rev-parse HEAD)"
           php --version
           composer --version
-          php -m
+          test -f composer.lock
+          php scripts/prepare.php
+          cp .env.example .env
+          if [ "$DB_CONNECTION" = sqlite ]; then touch "$DB_DATABASE"; fi
+          composer validate --strict
+          composer install --no-interaction --prefer-dist
+          composer check-platform-reqs
+      - name: Dependency vulnerability audit
+        run: composer audit --locked --no-interaction
+      - name: PHP syntax, style, type analysis and targeted source checks
+        run: |
+          set -eu
+          find app bootstrap config database routes scripts tests public -name '*.php' -not -name '*.blade.php' -print0 | xargs -0 -n1 php -l
+          vendor/bin/pint --test
+          vendor/bin/phpstan analyse --memory-limit=1G --no-progress
+          python3 scripts/security_scan.py
+      - name: Migration forward, rollback and forward again
+        run: |
+          set -eu
+          php artisan migrate --force
+          php artisan migrate:rollback --force
+          php -r 'require "vendor/autoload.php"; $a=require "bootstrap/app.php"; $a->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); if(Illuminate\Support\Facades\Schema::hasTable("users")){exit(1);}'
+          php artisan migrate --force
+          php artisan cms:doctor
+      - name: Unit, integration, regression and integer performance tests
+        run: vendor/bin/phpunit --log-junit build/junit.xml
+      - name: Compile configuration, routes and templates
+        run: |
+          set -eu
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
+          php artisan config:clear
+          php artisan route:clear
+          php artisan view:clear
+      - name: Real HTTP session and CSRF smoke test
+        run: |
+          set -eu
+          APP_ENV=local php artisan serve --host=127.0.0.1 --port=8765 > build/server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          python3 scripts/http_smoke.py
+      - name: Validate locked production dependency install
+        run: |
+          rm -rf vendor
+          composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+          composer check-platform-reqs --no-dev
+          php artisan cms:doctor
+          git diff --exit-code
