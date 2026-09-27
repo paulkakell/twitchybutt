@@ -1,0 +1,33 @@
+name: Contract development tools
+on:
+  push:
+    branches: ['build/01.00.00']
+    paths: ['.github/workflows/contract-workspace.yml']
+permissions:
+  contents: read
+jobs:
+  tools:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09
+        with:
+          version: v1.8.3
+          cache: false
+      - name: Prepare isolated contract tools
+        run: |
+          set -eu
+          mkdir -p /tmp/contract-tools
+          cp "$(command -v forge)" "$(command -v anvil)" "$(command -v cast)" /tmp/contract-tools/
+          curl --fail --silent --show-error --location https://github.com/argotorg/solidity/releases/download/v0.8.37/solc-static-linux -o /tmp/contract-tools/solc
+          echo '5de843c2c93563cc66425c99a4fb13fdbf32b4c4ae07469480faaf126e14404a  /tmp/contract-tools/solc' | sha256sum --check
+          chmod 0755 /tmp/contract-tools/solc
+          forge --version > /tmp/contract-tools/VERSIONS.txt
+          /tmp/contract-tools/solc --version >> /tmp/contract-tools/VERSIONS.txt
+          tar -czf /tmp/contract-tools.tar.gz -C /tmp/contract-tools .
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: contract-development-tools
+          path: /tmp/contract-tools.tar.gz
+          retention-days: 3
+          if-no-files-found: error
