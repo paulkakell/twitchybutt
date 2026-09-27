@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Rules\PasswordBytes;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,11 +15,14 @@ class AuthController
 {
     public function register(Request $request): RedirectResponse
     {
-        $request->merge(['email' => strtolower((string) $request->input('email'))]);
+        $email = $request->input('email');
+        if (is_string($email)) {
+            $request->merge(['email' => strtolower($email)]);
+        }
         $data = $request->validate([
             'name' => ['required', 'string', 'max:80'],
-            'email' => ['required', 'string', 'email', 'max:254', 'unique:users,email'],
-            'password' => ['required', 'string', 'confirmed', 'max:72', Password::min(12)->letters()->numbers()],
+            'email' => ['bail', 'required', 'string', 'email', 'max:254', 'unique:users,email'],
+            'password' => ['bail', 'required', 'string', new PasswordBytes, 'confirmed', Password::min(12)->letters()->numbers()],
         ]);
         $user = User::query()->create(['name' => $data['name'], 'email' => $data['email'], 'password' => $data['password']]);
         Auth::login($user);
@@ -30,7 +34,10 @@ class AuthController
 
     public function login(Request $request): RedirectResponse
     {
-        $data = $request->validate(['email' => ['required', 'string', 'email', 'max:254'], 'password' => ['required', 'string', 'max:72']]);
+        $data = $request->validate([
+            'email' => ['bail', 'required', 'string', 'email', 'max:254'],
+            'password' => ['bail', 'required', 'string', new PasswordBytes],
+        ]);
         if (! Auth::attempt(['email' => strtolower($data['email']), 'password' => $data['password']])) {
             throw ValidationException::withMessages(['email' => 'The supplied credentials could not be verified.']);
         }

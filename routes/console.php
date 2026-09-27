@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Rules\PasswordBytes;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -12,7 +13,7 @@ Artisan::command('cms:admin {--email= : Administrator email address}', function 
     $confirmation = (string) $this->secret('Confirm password');
     $validator = Validator::make(['email' => $email, 'password' => $password, 'password_confirmation' => $confirmation], [
         'email' => ['required', 'email', 'max:254', 'unique:users,email'],
-        'password' => ['required', 'confirmed', 'max:72', Password::min(12)->letters()->numbers()],
+        'password' => ['bail', 'required', new PasswordBytes, 'confirmed', Password::min(12)->letters()->numbers()],
     ]);
     if ($validator->fails()) {
         foreach ($validator->errors()->all() as $error) {

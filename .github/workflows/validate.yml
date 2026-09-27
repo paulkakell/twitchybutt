@@ -19,20 +19,20 @@ jobs:
     outputs:
       sha: ${{ steps.commit.outputs.sha }}
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-      - name: Generate the first dependency lock only when absent
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Resolve the explicitly added missing test dependency
         run: |
           set -eu
-          if [ ! -f composer.lock ]; then
+          if ! grep -q '"name": "mockery/mockery"' composer.lock; then
             php scripts/prepare.php
             cp .env.example .env
-            composer update --no-interaction --prefer-dist --no-scripts
+            composer update mockery/mockery --with-dependencies --no-interaction --prefer-dist --no-scripts
             vendor/bin/pint
             composer dump-autoload --no-interaction
             git config user.name 'TwitchyButt Build'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git add composer.lock app bootstrap config database public routes scripts tests
-            git commit -m 'build(00.03.00): lock dependencies and normalize PHP formatting (#1)'
+            git commit -m 'build(00.03.00): lock the missing test dependency and format hardening checks (#1)'
             git push origin HEAD:build/00.03.00
           fi
       - id: commit
@@ -48,13 +48,13 @@ jobs:
     timeout-minutes: 15
     services:
       postgres:
-        image: postgres:16
+        image: postgres:16@sha256:1a6ab3f5345eb6dbe04a1349529caabdb0ab09293a09590fad07b2246bfa4b54
         env:
           POSTGRES_DB: twitchybutt
           POSTGRES_USER: twitchybutt
           POSTGRES_PASSWORD: ci-only-not-a-production-secret
         ports: ["5432:5432"]
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+        options: --health-cmd "pg_isready -U twitchybutt -d twitchybutt" --health-interval 10s --health-timeout 5s --health-retries 5
     env:
       APP_ENV: testing
       APP_DEBUG: 'false'
@@ -71,7 +71,7 @@ jobs:
       CMS_PAYMENTS_ENABLED: 'false'
       CMS_RESTRICTED_PUBLISHING_ENABLED: 'false'
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           ref: ${{ needs.initial-lock.outputs.sha || github.sha }}
           persist-credentials: false
