@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Post;
 use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
@@ -22,7 +23,7 @@ class SecurityRegressionTest extends TestCase
         $channel['driver'] = 'single';
         $channel['path'] = $path;
         config(['logging.channels.security_test' => $channel, 'logging.default' => 'security_test']);
-        Log::purge('security_test');
+        Log::forgetChannel('security_test');
 
         return $path;
     }
@@ -62,6 +63,7 @@ class SecurityRegressionTest extends TestCase
 
     public function test_member_cannot_modify_or_read_operator_records(): void
     {
+        $this->withoutExceptionHandling([AuthorizationException::class]);
         $post = Post::query()->create(['title' => 'Private draft', 'body' => 'PRIVATE_DRAFT_SENTINEL', 'classification' => 'general', 'status' => 'draft', 'price_units' => 0]);
         $this->actingAs($this->member());
         foreach (['/studio', '/studio/reports', '/studio/posts/new', '/studio/posts/'.$post->id.'/edit'] as $path) {
@@ -90,7 +92,7 @@ class SecurityRegressionTest extends TestCase
             self::assertSame(23, $record['context']['actor_id']);
             self::assertSame('WARNING', $record['level_name']);
         } finally {
-            Log::purge('security_test');
+            Log::forgetChannel('security_test');
             unlink($path);
         }
     }
@@ -105,7 +107,7 @@ class SecurityRegressionTest extends TestCase
             self::assertSame('cms.invoice.quoted', $record['message']);
             self::assertSame(['actor_id' => 7, 'invoice_id' => $uuid], $record['context']);
         } finally {
-            Log::purge('security_test');
+            Log::forgetChannel('security_test');
             unlink($path);
         }
     }
@@ -119,7 +121,7 @@ class SecurityRegressionTest extends TestCase
             self::assertStringNotContainsString('SENTINEL', $text);
             self::assertStringContainsString('Throwable', $text);
         } finally {
-            Log::purge('security_test');
+            Log::forgetChannel('security_test');
             unlink($path);
         }
     }
@@ -137,7 +139,7 @@ class SecurityRegressionTest extends TestCase
             self::assertStringContainsString('cms.exception', $text);
             self::assertStringNotContainsString('SENTINEL', $text);
         } finally {
-            Log::purge('security_test');
+            Log::forgetChannel('security_test');
             unlink($path);
         }
     }
@@ -151,7 +153,7 @@ class SecurityRegressionTest extends TestCase
             self::assertStringContainsString('cms.report.received', $text);
             self::assertStringNotContainsString('SENTINEL', $text);
         } finally {
-            Log::purge('security_test');
+            Log::forgetChannel('security_test');
             unlink($path);
         }
     }
