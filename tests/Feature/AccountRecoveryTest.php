@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Jobs\SendAccountMail;
 use App\Models\User;
-use App\Services\AccountSecurityService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
