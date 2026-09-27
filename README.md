@@ -2,6 +2,10 @@
 
 Version **00.03.00**. Self-hosted, content-neutral creator software. **Development preview, not a production platform.**
 
+## Product roadmap
+
+[Read the full product roadmap](ROADMAP.md) or [add ideas in the editable Google Sheet](https://docs.google.com/spreadsheets/d/1bdbGDfaQMY68vkWfJhkeO3uBuDx-qHyqr8Vjjp1av_A/edit). Roadmap documentation revision **00.03.01** contains 100 items, ten proposed milestones, open decisions, acceptance criteria and release controls. Application VERSION is unchanged. Sheet edits do not automatically synchronize to GitHub.
+
 Creators operate their own application and database. No central content hosting is implemented. The intended payment flow allocates a 2% licensing fee; this release only calculates **TEST invoice quotes**. No wallet is connected, no funds are accepted, and quotes never unlock paid content.
 
 ## Run a local preview

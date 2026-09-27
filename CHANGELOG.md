@@ -1,5 +1,13 @@
 # Change log
 
+## 00.03.01 - Product roadmap documentation (review pending)
+
+Classification: additive documentation and contributor tooling; fixes the missing maintainable product backlog. Reference #3, based on PR #2 at b14dc4cf32e693808dcd326496db5336b7721399. Documentation revision is tracked in docs/roadmap/VERSION; root application VERSION remains 00.03.00.
+
+Add ROADMAP.md, 100 stable-ID items across ten proposed milestones, 12 open decisions, acceptance criteria, dependencies, an editable native Google Sheets planning copy, an ideas inbox and all 16 release controls. Provide a compact repository snapshot and feature-request/copyable item templates. Distinguish implemented preview work from proposed or released scope. Dates, staffing and effort remain uncommitted; no automatic Sheet/GitHub synchronization is implied.
+
+Add a dependency/ID validator with 13 regression tests and rerun full existing read-only CI. No runtime behavior, dependency lock, schema, secret or payment configuration changes. Exact commit and validation evidence are attached to the roadmap PR and Drive revision report. No application tag, main merge or deployment is included.
+
 ## 00.03.00 - Application foundation (unreleased)
 
 Classification: additive foundation with construction fixes. Reference #1. Requirements baseline 00.02.00. No existing deployed API or database is changed.

@@ -1,0 +1,11 @@
+Milestone	Proposed version	Name	Status	Outcome	Exit gate	Depends on
+M00	00.03.00	Application foundation	In review	Existing development preview	Review PR #2 and retain test evidence; do not infer production readiness.	
+M01	00.04.00	Account and security foundation	Planned	Safe identities and auditable operation	Account recovery, MFA, regression security tests and retained CI evidence pass.	M00
+M02	00.05.00	Verified crypto sandbox	Planned	A test payment unlocks exactly one purchase	Testnet invoice authorization, atomic 98/2 split, confirmation and reconciliation pass; no mainnet.	M01
+M03	00.06.00	Creator-owned media	Planned	Upload and deliver private images and video	Private storage and media authorization tested, including deletion and interrupted uploads.	M01
+M04	00.07.00	Membership commerce	Planned	Subscriptions as prepaid access plus paid posts and tips	Access periods, purchases, tips, pricing, member library and cancellations work with verified settlement.	M02; M03
+M05	00.08.00	Conditional content safeguards	Planned	Lawful restricted-content workflows without adult-only branding	Applicable verification, consent, reporting, notices and removal workflows approved and tested.	M01; M03
+M06	00.09.00	Turnkey private beta	Planned	A creator deploys and recovers their own site	Guided installation, domain/HTTPS, upgrades, restores and beta onboarding succeed on supported hosts.	M04; M05
+M07	01.00.00	Production release gate	Planned	Supportable commercial operation	All applicable launch gates signed off; no unresolved security finding above Low; release artifact and rollback verified.	M06
+M08	01.01.00	Creator growth	Deferred	Improve discovery within each creator site and retention	Choose features from pilot evidence; carry forward security, privacy and content boundaries.	M07
+M09	02.00.00	Optional ecosystem	Deferred	Expand only with a supported business case	Architecture and compatibility review before new networks, extensions or major platform changes.	M08

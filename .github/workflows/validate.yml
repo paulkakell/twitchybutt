@@ -1,7 +1,7 @@
 name: Application validation
 on:
   push:
-    branches: ["main", "build/00.03.00"]
+    branches: ["main", "build/00.03.00", "docs/roadmap-00.03.01"]
   pull_request:
   workflow_dispatch:
 permissions:
@@ -45,6 +45,11 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           persist-credentials: false
+      - name: Roadmap schema and regression checks
+        run: |
+          set -eu
+          python3 -B docs/roadmap/validate.py
+          python3 -B -m unittest discover -s tests/roadmap -v
       - name: Fresh locked installation
         run: |
           set -eu
