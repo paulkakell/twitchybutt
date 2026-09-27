@@ -1,5 +1,19 @@
 # Change log
 
+## 00.05.00 - Verified email and recovery (unreleased)
+
+Classification: additive account features, security regressions and deployment configuration; breaking session compatibility requires existing users to sign in again. Reference #7. Baseline c6571ce9dcaf09919252fc086491f8bd4387fd00. M01 remains incomplete. The former proposed crypto version is rescheduled rather than represented as delivered.
+
+Add account-security screens, signed 60-minute email verification links, creator-local encrypted database mail jobs and generic recovery requests. Add hashed, expiring, single-use 30-minute reset tokens, serialized redemption, password/remember-token rotation and authenticated-session generation checks. Invalid, missing or revoked session stamps deny access. Recovery cannot assign roles or automatically verify email. Mail remains disabled until configured; canonical origins and implicit SMTP TLS are required outside loopback development.
+
+Add a reversible migration for account timestamps, session generations, reset tokens and encrypted jobs. Preserve users/content on this migration's rollback; discard pending mail/tokens and invalidate all legacy sessions when reverting pre-generation code. Do not restore old passwords or revoked sessions. Application package versions and fee arithmetic are unchanged.
+
+Add 35 account tests and an isolated real HTTP/SMTP test for delivered links, CSRF, replay, two-session revocation and concurrent redemption. Keep the existing suites and above-Low release gate. Test evidence remains exact-commit and time-specific. Missing independent, secret-history, deployment-image and complete-M01 assessments still prevent release.
+
+Initial candidate d3641168504645c9fb8390b384c496b9978b58b9 failed lint on an unused test import in run 36296874702. Correction b6154bd56efc2de31266030a020318ffa96211b7 reached 100 tests in run 36297070083 and found two fixture errors: guarded entitlement creation and an ineffective simulated Host override. Candidate 3ae141e8cb8581a679f1181ca2e3c02cd929c432 corrects the fixtures without changing production guards or weakening assertions and adds real network/SMTP checks. Final results and subsequent corrections are retained in the PR and Drive report.
+
+New environment options: CMS_ACCOUNT_MAIL_ENABLED and creator SMTP/sender settings, documented in .env.example and docs/iterations/00.05.00.md. Worker retries/timeout, token cleanup, privacy boundaries, examples and rollback are documented there. No main merge, release tag, deployment, media enablement or funds transfer.
+
 ## 00.04.00 - Security and testing iteration 1 (unreleased)
 
 Classification: additive security/testing behavior with authorization and test-harness fixes. Reference #5. Based on roadmap commit 3398211a9d4c782d811b257b6372b10c87812813. This implements part of M01, not the complete account/security milestone.
@@ -12,11 +26,11 @@ Compatibility note: unknown log messages now become cms.log.redacted, unsafe con
 
 Initial commit 346ccf67d2c95395c13981825fddd2c448c119a1 and diagnostic correction 8db9f661b8ab7a5074127cd1f7e2b7a598e704c8 retain failed validation evidence. Runs 36293888537 and 36294077459 found the logging test API mismatch and nullable-role error. Final execution results belong to the exact commit and Actions run in the PR/Drive report; no earlier failed or skipped check is reported as passing.
 
-MFA, account recovery, verified mail and other M01 requirements remain open. No release tag, main merge, deployment, media publishing or payment transfer. See docs/iterations/00.04.00.md for all release controls, commands and rollback guidance.
+MFA, account recovery, verified mail and other M01 requirements remained open at this version. No release tag, main merge, deployment, media publishing or payment transfer. See docs/iterations/00.04.00.md for all release controls, commands and rollback guidance.
 
 ## 00.03.01 - Product roadmap documentation (review pending)
 
-Classification: additive documentation and contributor tooling; fixes the missing maintainable product backlog. Reference #3, based on PR #2 at b14dc4cf32e693808dcd326496db5336b7721399. Documentation revision is tracked in docs/roadmap/VERSION; root application VERSION remains 00.03.00.
+Classification: additive documentation and contributor tooling; fixes the missing maintainable product backlog. Reference #3, based on PR #2 at b14dc4cf32e693808dcd326496db5336b7721399. Documentation revision is tracked in docs/roadmap/VERSION; root application VERSION remains 00.03.00 for that historical snapshot.
 
 Add ROADMAP.md, 100 stable-ID items across ten proposed milestones, 12 open decisions, acceptance criteria, dependencies, an editable native Google Sheets planning copy, an ideas inbox and all 16 release controls. Provide a compact repository snapshot and feature-request/copyable item templates. Distinguish implemented preview work from proposed or released scope. Dates, staffing and effort remain uncommitted; no automatic Sheet/GitHub synchronization is implied.
 

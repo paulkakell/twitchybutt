@@ -101,12 +101,16 @@ final class AccountSecurityService
                     $account->password_changed_at = now();
                     $account->setRememberToken(Str::random(60));
                     $account->save();
-                    event(new PasswordReset($account));
-                    Log::info('cms.password.reset', ['actor_id' => $account->id]);
+                    DB::afterCommit(function () use ($account): void {
+                        event(new PasswordReset($account));
+                        Log::info('cms.password.reset', ['actor_id' => $account->id]);
+                    });
                 });
 
                 return $status === Password::PASSWORD_RESET;
-            });
+                // SQLite can reject a deferred read-to-write upgrade. Retry the whole
+                // rolled-back transaction, including token verification, not just writes.
+            }, 5);
         }, 200000);
     }
 }
