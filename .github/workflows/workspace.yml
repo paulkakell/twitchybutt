@@ -1,3 +1,5 @@
+# Recover the 00.06.00 source and locked tools before validating 00.07.00.
+# This development archive is not a production release artifact.
 name: Development workspace
 on:
   push:
