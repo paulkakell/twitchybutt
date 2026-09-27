@@ -144,7 +144,7 @@ def main() -> None:
     Path("build").mkdir(exist_ok=True)
     started = time.monotonic()
     with open("build/account-server.log", "w") as server_log:
-        server = subprocess.Popen(["php", "artisan", "serve", "--host=127.0.0.1", "--port=8766"], env=env, stdout=server_log, stderr=server_log, start_new_session=True)
+        server = subprocess.Popen(["php", "artisan", "serve", "--no-reload", "--host=127.0.0.1", "--port=8766"], env=env, stdout=server_log, stderr=server_log, start_new_session=True)
         try:
             first, second, recovery = client(), client(), client()
             for _ in range(50):

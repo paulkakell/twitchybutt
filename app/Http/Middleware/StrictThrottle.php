@@ -19,6 +19,7 @@ final class StrictThrottle
         $user = (string) $request->user()?->getAuthIdentifier();
         // No account-existence lookup or raw identity stored in the budget table.
         $scopes = match ($mode) {
+            'media' => [["media-ip:$ip", 40, 3600], ["media-user:$user", 20, 3600]],
             'login' => [["login-ip:$ip", 20, 60], ["login-account:$email", 5, 60]],
             'mfa' => [["mfa-ip:$ip", 20, 60], ["mfa-user:$user", 5, 60]],
             'signup' => [["signup-ip:$ip", 10, 3600]],

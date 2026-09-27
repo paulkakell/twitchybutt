@@ -7,6 +7,7 @@ use App\Models\Post;
 use App\Models\User;
 use App\Policies\PostPolicy;
 use App\Services\AccountSecurityService;
+use App\Services\MediaProcessor;
 use App\Services\SessionRegistry;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\Event;
@@ -29,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
         }
         AccountSecurityService::validateConfiguration();
         SessionRegistry::validateConfiguration();
+        MediaProcessor::validateConfiguration();
         Event::listen(Login::class, function (Login $event): void {
             $request = request();
             if ($event->guard === 'web' && $event->user instanceof User && $request->hasSession()) {

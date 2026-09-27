@@ -7,6 +7,7 @@ use Monolog\LogRecord;
 final class RedactLogRecord
 {
     private const EVENTS = [
+        'cms.media.queued', 'cms.media.ready', 'cms.media.failed', 'cms.media.deleted',
         'cms.mfa.enrolled', 'cms.mfa.verified', 'cms.mfa.codes_rotated', 'cms.session.revoked',
         'cms.member.registered', 'cms.admin.created', 'cms.post.created',
         'cms.post.updated', 'cms.report.received', 'cms.invoice.quoted', 'cms.exception',
@@ -25,7 +26,7 @@ final class RedactLogRecord
                 $context[$key] = $value;
             }
         }
-        foreach (['request_id', 'invoice_id'] as $key) {
+        foreach (['request_id', 'invoice_id', 'media_id'] as $key) {
             $value = $record->context[$key] ?? null;
             if (is_string($value) && preg_match('/\A[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/i', $value) === 1) {
                 $context[$key] = $value;

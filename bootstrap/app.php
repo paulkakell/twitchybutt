@@ -23,12 +23,24 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontFlash(['password', 'password_confirmation', '_token', 'token', 'code', 'recovery_code', 'secret']);
+        $exceptions->render(function (Throwable $exception, Request $request): ?Response {
+            // A rejected configuration must not activate Laravel's debug error renderer.
+            return app()->isBooted() ? null : new Response('Service unavailable.', 503, ['Content-Type' => 'text/plain; charset=UTF-8']);
+        });
         $exceptions->respond(function (Response $response, Throwable $exception, Request $request): Response {
             return SecurityHeaders::apply($request, $response);
         });
         $exceptions->report(function (Throwable $exception): bool {
             // Exclude messages, bindings, URLs and traces containing private content.
-            Log::error('cms.exception', ['exception_type' => $exception::class]);
+            try {
+                if (Log::getFacadeRoot() !== null) {
+                    Log::error('cms.exception', ['exception_type' => $exception::class]);
+                } else {
+                    error_log('{"event":"cms.bootstrap.failed"}');
+                }
+            } catch (Throwable) {
+                error_log('{"event":"cms.logging.failed"}');
+            }
 
             return false;
         });

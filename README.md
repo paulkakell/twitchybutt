@@ -1,16 +1,12 @@
 # TwitchyButt CMS
 
-Version **00.06.00**. Self-hosted, content-neutral creator software. **Unreleased development preview; release approval is blocked.** This iteration adds administrator MFA and revocable sessions on top of 00.05.00. It does not complete the full account/security milestone or enable payments.
+Application version **00.07.00**, on the `build/01.00.00` delivery track. **Unreleased development preview; release approval is blocked.** This increment adds creator-local private media. It does not enable real payments or public restricted-content operations.
 
-## Product roadmap
-
-[Read the roadmap baseline](ROADMAP.md), [edit the live planning Sheet](https://docs.google.com/spreadsheets/d/1bdbGDfaQMY68vkWfJhkeO3uBuDx-qHyqr8Vjjp1av_A/edit), or [read this iteration's scope, examples and rollback](docs/iterations/00.06.00.md). The versioned TSV remains the dated 00.03.01 baseline; live updates are reconciled manually, not automatically synchronized. Feature versions are actual construction identities; proposed milestone versions are subject to replanning.
-
-Creators own their application, database, mail service, sessions and future media storage. No central content hosting exists. The intended crypto flow allocates 2% to licensing; current invoices are **TEST quotes only**. No wallet is connected, no funds are accepted, and quotes do not grant access.
+Content-neutral creator software: each creator owns their application, domain, database, media, mail service and customer records. The intended supported checkout allocates 2% to licensing; current TEST quotes do not transfer money or grant access. No central content hosting, media proxy or licensor backup store is implemented.
 
 ## Run an isolated local preview
 
-Use 64-bit PHP 8.3+, Composer 2 and the locked package extensions, including PDO SQLite, mbstring, XML/DOM, ctype, fileinfo and OpenSSL. PostgreSQL additionally needs pdo_pgsql.
+Use 64-bit PHP 8.3+, Composer 2 and the locked extensions. SQLite requires pdo_sqlite; PostgreSQL additionally requires pdo_pgsql. Media opt-in requires GD with JPEG/PNG/WebP support and a PCNTL-enabled worker; optional video requires compatible FFmpeg/FFprobe. CI records the actual external tool versions rather than assuming they are Composer dependencies.
 
 ```sh
 git clone --branch build/01.00.00 https://github.com/paulkakell/twitchybutt.git
@@ -25,47 +21,39 @@ php artisan cms:doctor
 php artisan serve --host=127.0.0.1 --port=8000
 ```
 
-The administrator command prompts for a password and confirmation, has no default credentials and refuses to promote an existing member. Passwords require 12 characters with letters and numbers and at most 72 UTF-8 bytes. Null bytes are rejected. Keep environment files, keys, database, sessions and logs private. Only public/ may be a web document root; the development server is not a public deployment solution.
+Do not overwrite an existing APP_KEY. The administrator command prompts privately for a password and refuses to promote an existing member. The creator must enroll MFA before using the studio. Only public/ may be the web document root; the development server is not production hosting. Keep database, configuration, keys, sessions and logs private.
 
-**Upgrade compatibility:** apply both additive migrations before starting the new code. Existing sessions without a registry record must sign in again. Do not overwrite a working APP_KEY. Stop and restart workers during upgrades; review rollback guidance before reverting a site with completed password resets.
+## Implemented examples
 
-## Implemented features and examples
+**Accounts:** members register/sign in, verify an email, recover a password and manage sessions. Account email defaults off until creator SMTP and the encrypted database mail queue are configured. Signed verification links last 60 minutes; hashed single-use reset tokens last 30 minutes. Recovery requires fresh login, revokes existing sessions on their next request and preserves MFA. Verification is not proof of adulthood, identity or performer consent.
 
-**Accounts:** register at /register, sign in at /login, and use POST logout. Members cannot enter /studio. Public signup cannot choose roles, verification timestamps or session versions.
+**MFA:** open /account/mfa, confirm the current password, enroll an authenticator and save the ten recovery codes offline. Administrators require MFA; members can opt in. TOTP and recovery proofs are single-use across competing requests. Replacement requires current password plus recently completed MFA and keeps the old factor until confirmation. There is no public email-only MFA-disable shortcut. Lost-all-factor operations still need review.
 
-**Email verification:** open /account/security and request a signed link. It expires after 60 minutes, requires the matching signed-in account and is invalidated by an email change or password-reset generation. Verification does not establish age, identity or performer consent and does not grant administrator privileges.
+**Sessions:** /account/sessions lists owner-scoped management references and timestamps. Confirm a password to revoke one or all sessions. Default idle/absolute limits are 30/720 minutes, bounded in configuration. Existing pre-registry sessions must sign in again. A response already being delivered cannot be recalled.
 
-**Password recovery:** use /forgot-password. Known and unknown addresses receive the same public response and enqueue the same kind of encrypted job. A delivered reset link lasts 30 minutes and is single-use; enter your email and new password. Success rotates the password/session generation, revokes existing authenticated sessions on their next request and requires a fresh sign-in. In-flight responses cannot be recalled. Recovery does not automatically verify the email or change the role.
+**Publishing:** create a post in /studio, choose general/published and price 0 for a public post. Text is escaped, not executed as HTML. Restricted/unclassified content remains private drafts. A general post priced 20 is locked without current entitlement. No route grants entitlements by pretending a payment succeeded.
 
-**Mail setup:** account email is off by default. Configure the creator-owned SMTP service, canonical APP_URL and database worker before setting CMS_ACCOUNT_MAIL_ENABLED=true. Outside local-loopback development, account links require HTTPS and SMTP requires implicit TLS. Log delivery is prohibited. See [every new setting and local/live examples](docs/iterations/00.05.00.md). Encrypted jobs use the creator's APP_KEY; raw failed-job storage is disabled.
+**Private media:** save a post, then choose Manage private media. With media enabled, upload JPEG/PNG/WebP or separately enabled MP4, add alternative text and set display order. Sources are quarantined privately; workers generate bounded derivatives. Only ready media appears to authorized readers. Image maximum 8 MiB/20 million pixels; MP4 maximum 64 MiB/10 minutes. Relative signed links last 5 minutes and always recheck current access. Revocation/deletion blocks subsequent requests; the studio removes local files and releases quota only after cleanup. Cloud storage, resumable upload, adaptive streaming, isolated native decoders and caption support remain open.
+
+**Invoice previews:** 20 TEST produces 20.000000 gross, 0.400000 licensing and 19.600000 creator share. Amounts are bounded integer snapshots with buyer-scoped idempotency. Browser totals and settlement fields are ignored; only the buyer can read a quote. Network fees, taxes and refunds are not implemented by this arithmetic.
+
+**Reporting:** /report accepts throttled plain-text reports without an account. MFA-authorized administrators inspect /studio/reports. Complete case/removal deadlines, attachments and provider workflows remain open.
+
+**Operations:** cms:doctor checks configuration/database without secrets. cms:media-status reports local asset counts, reservations and stalled work. Known-event logs redact arbitrary content and credentials; startup failures do not expose debug details. Infrastructure logging and alerting remain separate responsibilities.
+
+## Configuration, workers and testing
+
+[Operator settings](docs/OPERATIONS.md) and [00.07.00 examples/rollback](docs/iterations/00.07.00.md) cover every new option. Account/MFA details remain in their versioned documents. Media, video, real payments and restricted publication default off. Payment/restricted flags are false-only in this preview.
 
 ```sh
+# Creator account-mail worker, after explicit SMTP opt-in:
 php artisan queue:work database --queue=account-mail --sleep=1 --tries=3 --timeout=30
-# Schedule this cleanup hourly in the creator's environment:
+# Separate media worker, after explicit media opt-in:
+php -d memory_limit=512M artisan queue:work media --queue=media --sleep=1 --tries=1 --timeout=240 --memory=512
+# Daily security pruning; hourly expired-reset cleanup:
+php artisan cms:security-prune
 php artisan auth:clear-resets
-```
-
-**MFA:** open /account/mfa, confirm your current password, and add the displayed key to an authenticator using six-digit TOTP with a 30-second period. Confirm with a fresh code and save the ten single-use recovery codes offline. Administrators must complete MFA before using the studio; members can opt in. Password-only sessions for enrolled accounts cannot access protected pages until challenged. Password recovery does not disable MFA. Pending setup expires after ten minutes. Reusing a previously accepted TOTP time step or recovery code is rejected. Regenerating recovery codes requires the password and a fresh TOTP code; previous codes stop working. To replace a lost authenticator, sign in with a saved recovery code, then choose Replace authenticator within five minutes and reconfirm your password. The old factor remains enforced until confirmation of the new one; prior sessions and recovery codes are then invalidated. No remote MFA-disabling endpoint exists.
-
-**Session controls:** /account/sessions lists only your active sessions, with UTC creation/activity times. Revoke one session or sign out everywhere using your current password. Session identifiers displayed here are management references, not login cookies. Idle timeout defaults to 30 minutes and absolute timeout to 720 minutes. Schedule `php artisan cms:security-prune` daily to remove session metadata older than seven days and expired pending factors and attempt budgets. Existing sessions must sign in again after this upgrade. See [MFA and recovery precautions](docs/iterations/00.06.00.md).
-
-**Publishing:** /studio/posts/new accepts escaped plain text. Select general/published and price 0 for public access. Restricted and unclassified posts remain private drafts; those labels are not legal exemptions. No media upload is included.
-
-**Paid access:** a general post priced at 20 is locked without an unexpired, unrevoked entitlement. No HTTP endpoint grants entitlements here, and test fixtures are not settlement evidence. Existing paid access does not call a central licensing service.
-
-**Invoice previews:** signed-in buyers request immutable TEST snapshots. A 20 TEST quote records 20.000000 total, 0.400000 licensing and 19.600000 creator share. Browser totals and settlement fields are ignored. Reusing a buyer/idempotency key returns its original quote; using it for a different purchase returns 409. Only the buyer can read the quote. No tax/refund policy is implied by this arithmetic.
-
-**Reporting:** /report accepts throttled text reports without an account; administrators read /studio/reports. Attachments, notifications and a complete statutory case workflow are not implemented.
-
-**Diagnostics and privacy:** /up is liveness, not dependency readiness. cms:doctor checks configuration and database without printing secrets. Approved JSON events retain only safe typed identifiers. Arbitrary messages/context and exception class names are redacted. New mail events report queue/process/failure status without addresses or links. Infrastructure access logs and SMTP-provider handling need separate review.
-
-**Attempt limits:** login, signup, recovery, MFA, verification, reporting and invoice writes use atomic SQL budgets. HMAC keys avoid storing raw email/IP values. IP-first limits prevent blocked sources allocating unbounded account rows. Ten-process tests check that parallel requests cannot exceed the budget.
-
-## Configuration, tests and release rule
-
-.env.example, docs/OPERATIONS.md and docs/iterations/00.05.00.md describe settings. Payment and restricted-publication flags remain false-only. Production rejects debug output, insecure cookies and ephemeral sessions/rate limits; these checks do not authorize deployment.
-
-```sh
+# Disposable databases only:
 composer validate --strict
 composer audit --locked
 vendor/bin/pint --test
@@ -77,18 +65,14 @@ python3 -B -m unittest discover -s tests/security -v
 python3 -B -m unittest discover -s tests/roadmap -v
 ```
 
-Run tests only against disposable databases. CI repeats fresh SQLite/PostgreSQL installs, migrations forward/backward, syntax/style/types, full application/regression tests, cached builds, real HTTP/CSRF checks and small performance budgets. The account smoke check adds loopback SMTP delivery and concurrent reset redemption without external recipients. Actual results, including failed runs, are recorded by exact commit in the PR and working report. A planned test is not a pass.
+CI repeats full tests on SQLite/PostgreSQL, fresh locked and no-dev installs, migrations, cached builds, scoped scans and actual loopback HTTP/SMTP/media/concurrency checks. Retained artifacts identify the exact tested commit and omit application logs, mail bodies and credentials. A queued, skipped or planned test is not a pass. Native worker isolation, production tool-image assessment, real-provider delivery and browser/accessibility testing require additional evidence.
 
-CI retains allowlisted test and sanitized scanner evidence for 30 days without uploading application logs, session files or mail bodies. It uses repository-read-only permissions and pinned actions. The scoped Semgrep rules are not a comprehensive audit; dependency advisories are time-specific. Evidence inventory is not signed provenance or a complete SBOM.
+## Roadmap and release rule
 
-**All unresolved findings above Low block release.** Unknown severity, missing/failed/stale scans, wrong-candidate evidence and incomplete required reviews also block. Accepted/deferred is not fixed. The full gate defaults to release mode; --development never authorizes release. Branch/tag protections and signed external approvals are still unfinished, so this is a CLI/CI check, not an administrator-proof permission boundary.
+[Editable roadmap](https://docs.google.com/spreadsheets/d/1bdbGDfaQMY68vkWfJhkeO3uBuDx-qHyqr8Vjjp1av_A/edit), [dated baseline](ROADMAP.md), [1.0 acceptance](docs/ONE_ZERO_ACCEPTANCE.md), [architecture](docs/ARCHITECTURE.md), [security review](docs/SECURITY.md), [change log](CHANGELOG.md).
 
-## Remaining release requirements
+**Every unresolved security finding above Low blocks release.** Unknown severity, missing/failed/stale/wrong-candidate evidence and incomplete mandatory reviews also block; accepted/deferred is not fixed. The release gate defaults to denial and development mode never approves release. Independent security, secret-history, deployment-image and complete milestone evidence remain missing. Repository protections and externally controlled signed approvals are unfinished; CLI/CI is not an administrator-proof permission barrier.
 
-Independent MFA/session review, lost-all-factors operational recovery, privacy lifecycle, readiness/alerts, comprehensive browser accessibility, deployment hardening and independent security review remain unfinished. So do secret-history scanning, actual deployment-image assessment, production mail-provider verification, signed provenance and durable release evidence.
+Apply migrations before new code, preserve current credentials/APP_KEY and keep matching private files/database for rollback. Media-schema rollback does not remove files and must not reset quota over retained storage. Prefer a forward fix, not reopening pre-MFA code. No main merge, tag, deployment or real funds transfer is authorized here.
 
-No testnet/mainnet contract, real settlement, production token/network/treasury configuration, subscriptions, automated renewals, refunds/taxes, media pipeline, performer/viewer verification, turnkey deployment/upgrades/backups or final commercial license is approved. Do not accept customer funds or publish restricted content with this preview.
-
-See CHANGELOG.md, docs/ARCHITECTURE.md, docs/SECURITY.md and docs/iterations/00.05.00.md. Current delivery tracking issue: #9. The branch name build/01.00.00 describes the goal, not the application version or a release approval. Earlier branches/PRs remain intact; no release tag or main merge is implied.
-
-Copyright remains with the project owner. Public visibility does not grant an open-source or commercial-use license. Third-party packages retain their licenses; inspect them with composer licenses.
+Copyright remains with the project owner. Public repository visibility is not an open-source or commercial-use license. Third-party packages retain their own licenses; inspect them with composer licenses.

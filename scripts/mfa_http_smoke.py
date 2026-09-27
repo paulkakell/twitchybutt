@@ -68,7 +68,7 @@ def main() -> None:
     Path("build").mkdir(exist_ok=True)
     started = time.monotonic()
     with open("build/mfa-server.log", "w") as output:
-        server = subprocess.Popen(["php", "artisan", "serve", "--host=127.0.0.1", "--port=8767"],
+        server = subprocess.Popen(["php", "artisan", "serve", "--no-reload", "--host=127.0.0.1", "--port=8767"],
                                   env=env, stdout=output, stderr=output, start_new_session=True)
         try:
             first, old, next_client = http.client(), http.client(), http.client()

@@ -1,5 +1,19 @@
 # Change log
 
+## 00.07.00 - Creator-local private media (unreleased)
+
+Classification: additive media preview and storage/delivery hardening. Reference #9. Based on tested 00.06.00 commit 9af1cdad51a8ee8a5555face7b720a43363a98ed. This continues toward 01.00.00 but does not finish M03 or authorize release.
+
+Add MFA-protected creator uploads, private quarantine, bounded JPEG/PNG/WebP conversion, optional MP4 conversion and thumbnails, a dedicated media queue, storage reservations, ordered descriptive galleries and owner-controlled removal. Delivery uses expiring relative signatures plus current post/entitlement checks, including byte ranges. Never serve originals or put paid URLs/descriptions in unauthorized HTML. Delete revokes delivery before filesystem cleanup; failed cleanup retains its quota reservation.
+
+Disable the framework's generic file-serving routes and public storage links explicitly. Restrict stored paths to generated asset UUIDs and fixed file names, reject symlinks/traversal, inspect actual bytes rather than client MIME labels, and set private file/directory permissions. Media subprocesses use argument arrays and a cleared environment; constrain protocols, MOV external references, dimensions, duration, output size, threads and timeouts. Worker/container isolation and runtime-image assessment remain outstanding; reencoding is not a malware or compliance certification.
+
+Add 39 media feature/regression tests and real HTTP image/video upload, queue conversion, range authorization, revocation and deletion checks. Initial local tests exposed generic file serving, a duplicated route name from integration, cached fixture sizes, extension-derived fake MIME values, unsatisfied-range behavior and inherited portable-PHP libraries. A synchronized upload test subsequently exposed a SQLite read-to-write reservation race; change to an atomic conditional reservation UPDATE, and fence job failures by claim identifier. Correct production configuration/path/range/process handling and fixtures without relaxing security expectations; rerun the complete final suite. Exact remote execution belongs to the tested candidate and retained run evidence, not this pre-execution change log.
+
+New migration: media_assets and media_storage. New settings: CMS_MEDIA_ENABLED, CMS_MEDIA_VIDEO_ENABLED, CMS_MEDIA_QUOTA_MB, CMS_FFMPEG_PATH, CMS_FFPROBE_PATH. Media defaults off; no Composer dependency update. External worker prerequisites are explicit. Rollback retains files and core accounts but loses media/quota metadata; preserve matching database and files and never reset quota over an existing file store. No main merge, tag, deployment, real payment or restricted-publication enablement.
+
+Recovery verification found that an exception before Laravel's logger booted could itself break the exception reporter. Harden the real HTTP entrypoint to return a fixed 503 without engine/exception diagnostics; the reporter falls back to constant JSON events. Add five missing-autoloader, early-exception, syntax-failure and real-HTTP rejected-configuration tests. Prevent Laravel debug rendering before bootstrap completes, including production debug misconfiguration. CI loopback servers now use --no-reload so explicitly supplied isolated-test runtime settings remain in effect. This is a defensive fix, not a waiver of the uncompleted deployment review.
+
 ## 00.06.00 - MFA and session controls (unreleased)
 
 Classification: additive account-security features and defensive fixes. Reference #9. Continue toward 01.00.00 from 00.05.00; the delivery branch is not a completed 1.0 product.

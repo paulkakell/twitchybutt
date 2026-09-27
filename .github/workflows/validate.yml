@@ -53,6 +53,15 @@ jobs:
           python3 -B docs/roadmap/validate.py
           python3 -B -m unittest discover -s tests/roadmap -v
           python3 -B -m unittest discover -s tests/security -v
+      - name: Media worker prerequisites
+        run: |
+          set -eu
+          php -r 'if (!extension_loaded("gd") || !extension_loaded("pcntl")) { fwrite(STDERR, "Media test prerequisites missing.\n"); exit(1); }'
+          command -v ffmpeg
+          command -v ffprobe
+          ffmpeg -version > build/media-tools.txt
+          ffprobe -version >> build/media-tools.txt
+          php -r 'echo "GD: ".json_encode(gd_info()).PHP_EOL;' >> build/media-tools.txt
       - name: Fresh locked installation
         run: |
           set -eu
@@ -101,7 +110,7 @@ jobs:
       - name: Real HTTP session and CSRF smoke test
         run: |
           set -eu
-          APP_ENV=local php artisan serve --host=127.0.0.1 --port=8765 > build/server.log 2>&1 &
+          APP_ENV=local php artisan serve --no-reload --host=127.0.0.1 --port=8765 > build/server.log 2>&1 &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           python3 scripts/http_smoke.py
@@ -111,6 +120,10 @@ jobs:
         run: python3 -B scripts/mfa_http_smoke.py
       - name: Concurrent database attempt budgets
         run: python3 -B scripts/attempt_budget_smoke.py
+      - name: Private media HTTP and real worker checks
+        run: python3 -B scripts/media_http_smoke.py
+      - name: Concurrent media quota reservations
+        run: python3 -B scripts/media_quota_smoke.py
       - name: Validate locked production dependency install
         run: |
           set -eu
@@ -133,6 +146,9 @@ jobs:
             build/account-http.json
             build/mfa-http.json
             build/attempt-budget.json
+            build/media-http.json
+            build/media-quota.json
+            build/media-tools.txt
           retention-days: 30
           if-no-files-found: error
   security:

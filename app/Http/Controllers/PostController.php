@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\MediaAsset;
 use App\Models\Post;
+use App\Services\MediaLinks;
 use App\Services\TokenAmount;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,7 +29,10 @@ class PostController
             abort_unless($post->status === 'published' && $post->classification === 'general', 404);
         }
 
-        return view('post', ['post' => $post, 'canRead' => Gate::allows('view', $post)]);
+        $canRead = Gate::allows('view', $post);
+        $assets = $canRead && config('media.enabled') ? MediaAsset::query()->where('post_id', $post->id)->where('state', 'ready')->orderBy('position')->orderBy('id')->get() : collect();
+
+        return view('post', ['post' => $post, 'canRead' => $canRead, 'assets' => $assets, 'mediaLinks' => app(MediaLinks::class)]);
     }
 
     public function store(Request $request): RedirectResponse

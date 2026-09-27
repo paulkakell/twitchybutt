@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccountSecurityController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\MediaController;
 use App\Http\Controllers\MfaController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ReportController;
@@ -13,6 +14,7 @@ use App\Models\Report;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/media/{asset}/{variant}', [MediaController::class, 'show'])->whereUuid('asset')->whereIn('variant', ['content', 'thumbnail'])->middleware('signed:relative')->name('media.show');
 Route::get('/', [PostController::class, 'index']);
 Route::get('/posts/{post}', [PostController::class, 'show'])->whereNumber('post');
 Route::view('/report', 'report');
@@ -51,6 +53,10 @@ Route::middleware('auth')->group(function (): void {
 });
 Route::middleware(['auth', 'can:manage-content'])->prefix('studio')->group(function (): void {
     Route::get('/', fn () => view('studio', ['posts' => Post::query()->latest('id')->paginate(20), 'reportCount' => Report::query()->count()]));
+    Route::get('/posts/{post}/media', [MediaController::class, 'index'])->whereNumber('post');
+    Route::post('/posts/{post}/media', [MediaController::class, 'upload'])->whereNumber('post')->middleware('strict:media');
+    Route::put('/posts/{post}/media/{asset}', [MediaController::class, 'update'])->whereNumber('post')->whereUuid('asset');
+    Route::delete('/posts/{post}/media/{asset}', [MediaController::class, 'delete'])->whereNumber('post')->whereUuid('asset');
     Route::get('/posts/new', fn () => view('editor', ['post' => new Post]));
     Route::get('/posts/{post}/edit', fn (Post $post) => view('editor', compact('post')))->whereNumber('post');
     Route::post('/posts', [PostController::class, 'store']);

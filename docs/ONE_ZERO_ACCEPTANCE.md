@@ -1,16 +1,16 @@
 # 01.00.00 delivery and acceptance
 
-The user requested continuing through 1.0 in issue #9. `build/01.00.00` is the integration destination, not a declaration of completion. Actual implementation versions remain in root VERSION. No release is authorized until full product acceptance and security evidence are complete.
+User direction: continue through 1.0, issue #9. build/01.00.00 is the integration destination, not completion. Root VERSION identifies actual increments. No release is authorized until full product acceptance and current security evidence are complete.
 
-| Track | Available evidence or remaining boundary |
+| Track | Actual scope and remaining acceptance |
 | --- | --- |
-| Accounts | 00.05.00 verified email/recovery; 00.06.00 MFA/session increment under validation/review. Lost-all-factor recovery and operational review remain. |
-| Crypto and licensing | Integer 2% TEST quotes exist. Signed invoice, split contract, selected chain/token, wallet flow, independent settlement verification, refunds and reconciliation are not complete. Never treat quotes as payments. |
-| Creator-owned media | Private uploads, processing, access-controlled streaming, deletion and restore require implementation and adversarial tests. |
+| Accounts | Verified email/recovery, administrator MFA, single-use recovery codes and owner-controlled session revocation are implemented. Lost-all-factor operations and independent assessment remain. |
+| Crypto and licensing | Exact 2% TEST quotes exist. Wallet checkout, contract, real settlement verification, selected network/token, refunds and reconciliation remain incomplete. Quotes are not payments. |
+| Creator-owned media | 00.07.00 adds local quarantine/conversion, access-checked delivery and deletion. Cloud storage, resumable uploads, isolated scanning/transcoding, adaptive playback, captions/watermarks and complete crash/restore acceptance remain. |
 | Membership commerce | Prepaid plans, time-bound access, tips, cancellations, member library and settlement-backed entitlements remain. |
-| Conditional content safeguards | Restricted publishing remains disabled. Provider-backed viewer/performer verification, consent records, complaints/removal and applicable policies need implementation and review. |
-| Turnkey operation | Installer, creator-controlled hosting/storage/mail, secrets provisioning, updates, backups/restore and novice onboarding require end-to-end acceptance. |
-| Production readiness | Privacy/lifecycle, observability, load/accessibility tests, deployment/image scanning and incident/rollback exercises remain. |
-| Release security | No unresolved above-Low or unknown findings; complete current-candidate scan coverage and independent assessments; protected release flow and durable signed evidence required. |
+| Conditional safeguards | Restricted publishing is disabled. Provider-backed viewer/performer verification, consent, reporting/removal and applicable policy workflows require implementation and review. |
+| Turnkey operation | Installer, creator-owned hosting/storage/mail, secret provisioning, updates, consistent encrypted backups/restores and novice onboarding need end-to-end acceptance. |
+| Production readiness | Privacy/lifecycle, readiness/alerts, accessibility, sustained load, deployment-image scanning and incident exercises remain. |
+| Security release | No unresolved above-Low or unknown findings; maintained scan coverage, independent application/contract assessments, protected release flow and durable signed evidence required. |
 
-Do not move planned work to Implemented because it has a design, fixture or documentation stub. Do not move Implemented to Released without an approved exact-commit tag and artifacts. Preserve all live roadmap IDs and Ideas. A dependency scan does not replace an independent application/contract assessment, and no legal or provider approval is fabricated here.
+Do not mark a planned feature Implemented because it has a design, fixture or disabled stub. Do not mark it Released without an approved exact-commit tag and artifacts. Preserve stable roadmap IDs and Ideas. Dependencies passing audit do not replace application/contract review; no legal or provider approval is inferred. Future milestone target versions remain provisional.

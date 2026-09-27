@@ -1,4 +1,4 @@
-# Trust-boundary review: 00.06.00
+# Trust-boundary review: 00.07.00
 
 Single-creator development preview; issue #9. This is an engineering threat model, not independent clearance. Creator accounts, content, reports, SMTP credentials and factor keys stay on creator-owned systems except configured mail delivery.
 
@@ -19,3 +19,8 @@ Single-creator development preview; issue #9. This is an engineering threat mode
 Data minimization: the session registry stores management IDs and timestamps, not raw user agents/IPs/cookies. Rate-limit HMACs are pseudonymous and expire. Daily security pruning clears obsolete metadata and pending, never confirmed, factors. SMTP providers receive action-link messages under creator contracts. No central content/identity-document pipeline is introduced.
 
 Residual release requirements include all-factor-loss recovery, independent authentication/concurrency assessment, maintained broader SAST, secret-history and runtime-image scans, configuration/proxy/TLS review, browser/accessibility testing, operational alerts and proven restore procedures. No Medium-or-higher risk acceptance is granted. See [security review](../docs/SECURITY.md) and [iteration](../docs/iterations/00.06.00.md).
+
+
+## 00.07.00 additional media threats
+
+Private assets include originals, derivatives, descriptions and storage reservations. Adversarial inputs include spoofed MIME/extensions, oversized/pixel-bomb media, malformed tracks, path/symlink traversal, copied/expired URLs, revoked entitlements, cross-post writes, duplicate workers and interrupted deletion. Current controls are documented in docs/iterations/00.07.00.md and tested in PrivateMediaTest plus real HTTP queue checks. Native parser compromise requires OS isolation and patching beyond these application checks. The creator owns all processing; no media travels to a licensor service. Restoring old file/database state can resurrect deleted data and needs an independently reviewed recovery process.
