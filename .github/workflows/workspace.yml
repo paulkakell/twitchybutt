@@ -1,0 +1,33 @@
+name: Development workspace
+on:
+  push:
+    branches: ['build/01.00.00']
+    paths: ['.github/workflows/workspace.yml']
+permissions:
+  contents: read
+jobs:
+  workspace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Assemble tracked source and locked development tools
+        run: |
+          set -eu
+          composer validate --strict
+          composer install --no-interaction --prefer-dist --no-scripts
+          composer audit --locked
+          mkdir -p /tmp/cms-workspace
+          git archive HEAD | tar -x -C /tmp/cms-workspace
+          cp -a vendor /tmp/cms-workspace/vendor
+          cp "$(command -v composer)" /tmp/cms-workspace/composer.phar
+          git rev-parse HEAD > /tmp/cms-workspace/WORKSPACE_COMMIT
+          tar -czf /tmp/cms-workspace.tar.gz -C /tmp/cms-workspace .
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: development-workspace-${{ github.sha }}
+          path: /tmp/cms-workspace.tar.gz
+          retention-days: 3
+          if-no-files-found: error
