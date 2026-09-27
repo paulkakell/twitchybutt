@@ -19,10 +19,16 @@ jobs:
           composer validate --strict
           composer install --no-interaction --prefer-dist --no-scripts
           composer audit --locked
-          mkdir -p /tmp/cms-workspace
+          mkdir -p /tmp/cms-workspace/runtime/bin /tmp/cms-workspace/runtime/lib /tmp/cms-workspace/runtime/extensions
           git archive HEAD | tar -x -C /tmp/cms-workspace
           cp -a vendor /tmp/cms-workspace/vendor
           cp "$(command -v composer)" /tmp/cms-workspace/composer.phar
+          cp /usr/bin/php8.3 /tmp/cms-workspace/runtime/bin/php
+          cp /usr/lib/php/20230831/*.so /tmp/cms-workspace/runtime/extensions/
+          ldd /usr/bin/php8.3 /usr/lib/php/20230831/*.so | awk '/=> \/.* \(/ {print $3}' | sort -u | while read -r library; do
+            case "$(basename "$library")" in libc.so*|libm.so*|libpthread.so*|librt.so*|libdl.so*|ld-linux*) continue ;; esac
+            cp -L "$library" /tmp/cms-workspace/runtime/lib/
+          done
           git rev-parse HEAD > /tmp/cms-workspace/WORKSPACE_COMMIT
           tar -czf /tmp/cms-workspace.tar.gz -C /tmp/cms-workspace .
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
