@@ -24,7 +24,8 @@ class AccountSessionTest extends TestCase
     {
         $user = $this->member();
         $post = Post::query()->create(['title' => 'Private', 'body' => 'SESSION_TEST_PRIVATE_BODY', 'classification' => 'general', 'status' => 'published', 'price_units' => 100]);
-        Entitlement::query()->create(['user_id' => $user->id, 'post_id' => $post->id]);
+        // Explicit fixture creation preserves the production model's mass-assignment guard.
+        (new Entitlement)->forceFill(['user_id' => $user->id, 'post_id' => $post->id])->save();
         $this->actingAs($user)->get('/posts/'.$post->id)->assertOk()->assertSee('SESSION_TEST_PRIVATE_BODY');
         self::assertTrue(app(AccountSecurityService::class)->reset(['email' => $user->email, 'token' => Password::broker()->createToken($user), 'password' => 'NewExamplePassword456', 'password_confirmation' => 'NewExamplePassword456']));
         $this->get('/posts/'.$post->id)->assertRedirect('/login')->assertDontSee('SESSION_TEST_PRIVATE_BODY');

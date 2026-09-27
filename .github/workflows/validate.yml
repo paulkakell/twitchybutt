@@ -105,6 +105,8 @@ jobs:
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           python3 scripts/http_smoke.py
+      - name: Account HTTP, loopback SMTP and concurrent recovery
+        run: python3 -B scripts/account_http_smoke.py
       - name: Validate locked production dependency install
         run: |
           set -eu
@@ -124,6 +126,7 @@ jobs:
             build/audit.json
             build/dependency-licenses.json
             build/dependency-inventory.json
+            build/account-http.json
           retention-days: 30
           if-no-files-found: error
   security:

@@ -105,7 +105,8 @@ class EmailVerificationTest extends TestCase
 
     public function test_unknown_host_is_rejected(): void
     {
-        $this->withServerVariables(['HTTP_HOST' => 'other.example'])->get('/forgot-password')->assertStatus(400);
+        // The absolute test URL sets the actual request host; the configured origin stays unchanged.
+        $this->get('http://other.example/forgot-password')->assertStatus(400);
         self::assertStringStartsWith('http://localhost/email/verify/', app(AccountSecurityService::class)->verificationUrl($this->member()));
     }
 

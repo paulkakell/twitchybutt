@@ -1,19 +1,19 @@
 # TwitchyButt CMS
 
-Version **00.04.00**, account/security iteration 1. Self-hosted, content-neutral creator software. **Unreleased development preview, not a production platform.** M01 is incomplete and release approval remains blocked.
+Version **00.05.00**. Self-hosted, content-neutral creator software. **Unreleased development preview; release approval is blocked.** This iteration adds account email and recovery on top of 00.04.00. It does not complete the full account/security milestone or enable payments.
 
-Creators operate their own application and database. No central content hosting is implemented. The intended payment flow allocates a 2% licensing fee; this preview only calculates **TEST invoice quotes**. No wallet is connected, no funds are accepted, and quotes never unlock paid content.
+## Product roadmap
 
-## Editable roadmap
+[Read the roadmap baseline](ROADMAP.md), [edit the live planning Sheet](https://docs.google.com/spreadsheets/d/1bdbGDfaQMY68vkWfJhkeO3uBuDx-qHyqr8Vjjp1av_A/edit), or [read this iteration's scope, examples and rollback](docs/iterations/00.05.00.md). The versioned TSV remains the dated 00.03.01 baseline; live updates are reconciled manually, not automatically synchronized. Feature versions are actual construction identities; proposed milestone versions are subject to replanning.
 
-The [Google Sheets roadmap](https://docs.google.com/spreadsheets/d/1bdbGDfaQMY68vkWfJhkeO3uBuDx-qHyqr8Vjjp1av_A/edit) is the editable planning copy. Use Ideas for additions and permanent TB identifiers for accepted items. See [ROADMAP.md](ROADMAP.md) for the 00.03.01 baseline snapshot and [00.04.00 iteration notes](docs/iterations/00.04.00.md) for current work, release blockers and next steps. There is no automatic Sheet/GitHub synchronization; preserve live user additions before updating snapshots.
+Creators own their application, database, mail service, sessions and future media storage. No central content hosting exists. The intended crypto flow allocates 2% to licensing; current invoices are **TEST quotes only**. No wallet is connected, no funds are accepted, and quotes do not grant access.
 
-## Run a local preview
+## Run an isolated local preview
 
-Use an isolated development machine with 64-bit PHP 8.3+, Composer 2, PDO SQLite, mbstring, XML/DOM, ctype, fileinfo and OpenSSL. PostgreSQL also requires pdo_pgsql. Composer checks the locked package requirements.
+Use 64-bit PHP 8.3+, Composer 2 and the locked package extensions, including PDO SQLite, mbstring, XML/DOM, ctype, fileinfo and OpenSSL. PostgreSQL additionally needs pdo_pgsql.
 
 ```sh
-git clone --branch build/00.04.00 https://github.com/paulkakell/twitchybutt.git
+git clone --branch build/00.05.00 https://github.com/paulkakell/twitchybutt.git
 cd twitchybutt
 cp .env.example .env
 php scripts/prepare.php
@@ -25,29 +25,39 @@ php artisan cms:doctor
 php artisan serve --host=127.0.0.1 --port=8000
 ```
 
-Administrator provisioning prompts for a password and confirmation. No default administrator or password exists. Existing members are not silently promoted. Passwords require at least 12 characters with letters and numbers and at most 72 UTF-8 bytes; null bytes are rejected. Keep `.env`, the database, sessions and logs private. The development server is not a public deployment solution. Only `public/` may be a web document root.
+The administrator command prompts for a password and confirmation, has no default credentials and refuses to promote an existing member. Passwords require 12 characters with letters and numbers and at most 72 UTF-8 bytes. Null bytes are rejected. Keep environment files, keys, database, sessions and logs private. Only public/ may be a web document root; the development server is not a public deployment solution.
+
+**Upgrade compatibility:** apply the additive migration before starting the new code. Existing sessions without a generation stamp must sign in again. Do not overwrite a working APP_KEY. Stop and restart workers during upgrades; review rollback guidance before reverting a site with completed password resets.
 
 ## Implemented features and examples
 
-**Accounts:** register at `/register`, sign in at `/login`, and sign out with the form. Members cannot access `/studio`. An absent/null administrator flag denies access. Email verification, password recovery and MFA are not implemented.
+**Accounts:** register at /register, sign in at /login, and use POST logout. Members cannot enter /studio. Public signup cannot choose roles, verification timestamps or session versions.
 
-**Publishing:** visit `/studio/posts/new`, enter plain text, choose `general` and `published`, and use price `0` for open access. Drafts stay private. Edit and unpublish posts through the studio. HTML is escaped; media uploads are not included.
+**Email verification:** open /account/security and request a signed link. It expires after 60 minutes, requires the matching signed-in account and is invalidated by an email change or password-reset generation. Verification does not establish age, identity or performer consent and does not grant administrator privileges.
 
-**Classification:** `general`, `restricted`, or `unclassified`. Restricted and unclassified posts can be saved as private drafts but cannot be published, including through forged requests. These labels are not legal exemptions.
+**Password recovery:** use /forgot-password. Known and unknown addresses receive the same public response and enqueue the same kind of encrypted job. A delivered reset link lasts 30 minutes and is single-use; enter your email and new password. Success rotates the password/session generation, revokes existing authenticated sessions on their next request and requires a fresh sign-in. In-flight responses cannot be recalled. Recovery does not automatically verify the email or change the role.
 
-**Paid access:** price `20` creates a locked general post. Reading requires a valid, unexpired, unrevoked entitlement. No HTTP endpoint grants entitlements in this preview; test fixtures are not payment evidence. Existing valid access does not depend on a licensing service.
+**Mail setup:** account email is off by default. Configure the creator-owned SMTP service, canonical APP_URL and database worker before setting CMS_ACCOUNT_MAIL_ENABLED=true. Outside local-loopback development, account links require HTTPS and SMTP requires implicit TLS. Log delivery is prohibited. See [every new setting and local/live examples](docs/iterations/00.05.00.md). Encrypted jobs use the creator's APP_KEY; raw failed-job storage is disabled.
 
-**Invoice previews:** signed-in members can request a quote for a published general paid post. For 20 TEST, the server records 20.000000 total, 0.400000 fee, and 19.600000 creator allocation. Browser-supplied prices, fees and payment status are ignored. Duplicate buyer/idempotency keys return the original snapshot; reuse for another post returns 409. Quotes are visible only to their buyer and do not initiate payments.
+```sh
+php artisan queue:work database --queue=account-mail --sleep=1 --tries=3 --timeout=30
+# Schedule this cleanup hourly in the creator's environment:
+php artisan auth:clear-resets
+```
 
-**Reports:** `/report` accepts text reports without an account; administrators read them at `/studio/reports`. No attachments, emergency response, notifications or complete statutory case workflow are implemented.
+**Publishing:** /studio/posts/new accepts escaped plain text. Select general/published and price 0 for public access. Restricted and unclassified posts remain private drafts; those labels are not legal exemptions. No media upload is included.
 
-**Diagnostics and logs:** `/up` is liveness only. `php artisan cms:doctor` checks configuration and database connectivity without printing secrets. The daily JSON channel now allows only approved event names and typed identifiers. An arbitrary message becomes `cms.log.redacted`; private/nested context and traces are discarded. Exception events retain `Throwable`, not a class name that might contain a filesystem path. Deployment and web-server access logs still need separate review.
+**Paid access:** a general post priced at 20 is locked without an unexpired, unrevoked entitlement. No HTTP endpoint grants entitlements here, and test fixtures are not settlement evidence. Existing paid access does not call a central licensing service.
 
-**Response protection:** security headers, private/no-store cache policy and server-generated request IDs cover normal application responses, liveness and exception responses. Client-supplied request IDs are not trusted. The external static-file server needs its own configuration.
+**Invoice previews:** signed-in buyers request immutable TEST snapshots. A 20 TEST quote records 20.000000 total, 0.400000 licensing and 19.600000 creator share. Browser totals and settlement fields are ignored. Reusing a buyer/idempotency key returns its original quote; using it for a different purchase returns 409. Only the buyer can read the quote. No tax/refund policy is implied by this arithmetic.
 
-## Configuration and validation
+**Reporting:** /report accepts throttled text reports without an account; administrators read /studio/reports. Attachments, notifications and a complete statutory case workflow are not implemented.
 
-See `.env.example` and `docs/OPERATIONS.md` for exposed settings and examples. Both `CMS_PAYMENTS_ENABLED` and `CMS_RESTRICTED_PUBLISHING_ENABLED` are false-only reserved flags: setting either true prevents startup. Production mode rejects debugging, insecure cookies and ephemeral session/cache stores; this does not certify production readiness. This iteration adds no environment variables or dependency changes.
+**Diagnostics and privacy:** /up is liveness, not dependency readiness. cms:doctor checks configuration and database without printing secrets. Approved JSON events retain only safe typed identifiers. Arbitrary messages/context and exception class names are redacted. New mail events report queue/process/failure status without addresses or links. Infrastructure access logs and SMTP-provider handling need separate review.
+
+## Configuration, tests and release rule
+
+.env.example, docs/OPERATIONS.md and docs/iterations/00.05.00.md describe settings. Payment and restricted-publication flags remain false-only. Production rejects debug output, insecure cookies and ephemeral sessions/rate limits; these checks do not authorize deployment.
 
 ```sh
 composer validate --strict
@@ -56,30 +66,23 @@ vendor/bin/pint --test
 vendor/bin/phpstan analyse --memory-limit=1G
 vendor/bin/phpunit
 python3 scripts/security_scan.py
+python3 -B docs/roadmap/validate.py
 python3 -B -m unittest discover -s tests/security -v
 python3 -B -m unittest discover -s tests/roadmap -v
 ```
 
-Run tests only against disposable databases. CI checks fresh SQLite/PostgreSQL installations, dependency advisories, syntax/style/types, source guardrails, forward/backward migrations, unit/integration/regression behavior, cached builds, real HTTP/CSRF behavior and performance smoke budgets. Test configuration isolates cache/session state from runner variables. Validation artifacts retain JUnit, audit, dependency inventory/licenses and exact commit information for 30 days; application logs and `.env` are excluded.
+Run tests only against disposable databases. CI repeats fresh SQLite/PostgreSQL installs, migrations forward/backward, syntax/style/types, full application/regression tests, cached builds, real HTTP/CSRF checks and small performance budgets. The account smoke check adds loopback SMTP delivery and concurrent reset redemption without external recipients. Actual results, including failed runs, are recorded by exact commit in the PR and working report. A planned test is not a pass.
 
-## Mandatory release gate
+CI retains allowlisted test and sanitized scanner evidence for 30 days without uploading application logs, session files or mail bodies. It uses repository-read-only permissions and pinned actions. The scoped Semgrep rules are not a comprehensive audit; dependency advisories are time-specific. Evidence inventory is not signed provenance or a complete SBOM.
 
-All unresolved findings above **Low** block release. Unknown severity, failed or empty scans, wrong-commit/stale evidence and missing required reviews also block. Marking a finding accepted or deferred does not fix it. Independent review, complete M01 acceptance, secret-history and deployment-image evidence are currently pending.
+**All unresolved findings above Low block release.** Unknown severity, missing/failed/stale scans, wrong-candidate evidence and incomplete required reviews also block. Accepted/deferred is not fixed. The full gate defaults to release mode; --development never authorizes release. Branch/tag protections and signed external approvals are still unfinished, so this is a CLI/CI check, not an administrator-proof permission boundary.
 
-```sh
-python3 scripts/security_gate.py \
-  --evidence build/security-evidence.json \
-  --commit "$(git rev-parse HEAD)" --version "$(cat VERSION)"
-```
+## Remaining release requirements
 
-The default is release mode and returns a failing exit code while any gate is unmet. The `--development` option checks available scan findings only and explicitly never authorizes release. Do not use that option or `continue-on-error` in a release job. The separate `release-readiness` job remains failing until current approval evidence exists; green application and scan jobs alone are not approval.
+MFA, device-specific session controls, privacy lifecycle, readiness/alerts, browser accessibility, complete deployment hardening and independent security review remain unfinished. So do secret-history scanning, actual deployment-image assessment, production mail-provider verification, signed provenance and durable release evidence.
 
-Current SAST uses a digest-pinned Semgrep engine and six project-specific rules, not a comprehensive maintained security ruleset. The dependency inventory is not a signed SBOM. Protected branch/tag rules, signed external approvals and a deployment pipeline are not configured, so repository administrators can still bypass workflows. See `security/THREAT_MODEL.md`, `security/release-policy.json` and `docs/iterations/00.04.00.md` for scope, limitations and reviewer-controlled approval guidance.
+No testnet/mainnet contract, real settlement, production token/network/treasury configuration, subscriptions, automated renewals, refunds/taxes, media pipeline, performer/viewer verification, turnkey deployment/upgrades/backups or final commercial license is approved. Do not accept customer funds or publish restricted content with this preview.
 
-## Remaining release gates
+See CHANGELOG.md, docs/ARCHITECTURE.md, docs/SECURITY.md and docs/iterations/00.05.00.md. Current tracking issue: #7. Earlier branches/PRs remain intact; no release tag or main merge is implied.
 
-No real or testnet transfers, split contract, production token/network, treasury address, subscriptions/automatic renewals, refunds/taxes, media pipeline, performer/viewer verification, statutory case automation, email/reset/MFA, turnkey deployment/upgrades/backups or final commercial license is implemented or approved. Do not accept customer funds or publish restricted content with this preview.
-
-See `CHANGELOG.md`, `docs/ARCHITECTURE.md`, `docs/OPERATIONS.md`, `docs/SECURITY.md`, `security/THREAT_MODEL.md`, and `docs/iterations/00.04.00.md`. Current tracking issue: #5. Prior application and roadmap PRs remain separate. No main merge, release tag or deployment is included.
-
-Copyright remains with the project owner. Public visibility does not grant an open-source or commercial-use license. Third-party packages retain their own licenses; use `composer licenses` to inventory them.
+Copyright remains with the project owner. Public visibility does not grant an open-source or commercial-use license. Third-party packages retain their licenses; inspect them with composer licenses.
