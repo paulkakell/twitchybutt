@@ -14,8 +14,20 @@ class SecurityHeaders
     public function handle(Request $request, Closure $next): Response
     {
         $requestId = (string) Str::uuid();
+        $request->attributes->set('cms_request_id', $requestId);
+        Log::withoutContext();
         Log::withContext(['request_id' => $requestId]);
-        $response = $next($request);
+
+        return self::apply($request, $next($request));
+    }
+
+    public static function apply(Request $request, Response $response): Response
+    {
+        $requestId = $request->attributes->get('cms_request_id');
+        if (! is_string($requestId) || ! Str::isUuid($requestId)) {
+            $requestId = (string) Str::uuid();
+            $request->attributes->set('cms_request_id', $requestId);
+        }
         $response->headers->set('X-Request-ID', $requestId);
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('X-Frame-Options', 'DENY');
