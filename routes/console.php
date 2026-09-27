@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use App\Rules\PasswordBytes;
+use App\Services\SecurityMaintenance;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -51,3 +52,10 @@ Artisan::command('cms:doctor', function (): int {
 
     return in_array(false, $checks, true) ? 1 : 0;
 })->purpose('Check configuration without printing secrets.');
+
+Artisan::command('cms:security-prune', function (): void {
+    $counts = app(SecurityMaintenance::class)->prune();
+    $this->info('Expired session records removed: '.$counts['sessions']);
+    $this->info('Expired pending factors cleared: '.$counts['pending_factors']);
+    $this->info('Expired attempt budgets removed: '.$counts['budgets']);
+})->purpose('Remove expired local security metadata without exposing identities or keys');

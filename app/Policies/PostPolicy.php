@@ -5,12 +5,13 @@ namespace App\Policies;
 use App\Models\Entitlement;
 use App\Models\Post;
 use App\Models\User;
+use Illuminate\Support\Facades\Gate;
 
 class PostPolicy
 {
     public function view(?User $user, Post $post): bool
     {
-        if ($user?->is_admin) {
+        if (($user !== null && Gate::forUser($user)->allows('manage-content'))) {
             return true;
         }
         // Classification checks precede free pricing and entitlement checks.

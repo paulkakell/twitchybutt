@@ -1,43 +1,31 @@
-# Security review: 00.05.00
+# Security review: 00.06.00
 
-Development review, not security certification. Reference #7; baseline 00.04.00 and security/THREAT_MODEL.md. Full M01 acceptance and independent assessments remain incomplete. No above-Low exception is approved.
+Development engineering review, not an independent audit or certification. Issue #9. The complete product and M01 acceptance remain unfinished. No above-Low exception is authorized.
 
-## Account controls
+## Account and authorization controls
 
-Authentication retains framework hashing, rotated login/signup sessions, CSRF and request throttling. Role assignment and security timestamps/generations are not public-fillable. Local administrator provisioning refuses implicit promotion. Password byte limits and null-byte validation remain in place.
+Current-password confirmation protects enrollment and session changes. TOTP enrollment expires after ten minutes and requires proof of the new factor; unconfirmed keys grant no authority. Confirmed keys use framework authenticated encryption and are hidden from model serialization. High-entropy recovery codes are shown once, hashed at rest and consumed transactionally. Time-step reuse is rejected across sessions. RFC vectors, malformed values, ownership, expiry and competing consumption are tested.
 
-Account recovery uses identical public responses and encrypted queued requests without checking whether an address exists on that HTTP path. This is a recovery-endpoint property, not a guarantee that all other application paths conceal account existence; existing signup uniqueness behavior remains part of the independent account review. Input validation failures and temporary infrastructure failures are generic within their categories. Reset attempts are throttled; malformed/expired/reused tokens fail. The framework broker stores token hashes, while the controller accepts only bounded hex tokens and validated passwords.
+A password-only login does not grant authenticated content access for an enrolled user. Administrators need MFA both at the studio middleware and content-authorization gate. Missing confirmed key material does not silently turn MFA off. Password resets preserve MFA. Lost-authenticator replacement requires a recently completed MFA challenge (including a saved recovery code) plus password confirmation. Existing factors remain active until replacement confirmation. Pending state is generation-bound, so a later password reset invalidates it. Losing every factor and recovery code still requires an independently reviewed operator procedure; no email-only bypass exists.
 
-Password/token consumption and generation increment are transactional. User-row serialization coordinates issuance/redemption on PostgreSQL. Concurrent behavior is a required test on both supported databases, not an assumption derived from sequential tests. AccountSession rejects old/missing/mismatched stamps and refreshes the current user for each authenticated web request. Sessions already executing cannot be recalled. Resetting an administrator password is not a replacement for MFA; MFA and recovery-code policy remain release requirements.
+Each authenticated request checks its user/generation stamp, registry ownership, revocation, idle deadline and absolute deadline. Revoke-all rotates the generation. Session UUIDs are management references, not bearer tokens. Current requests already executing cannot be recalled. Login/enrollment/reset races are constrained by snapshots and database transactions; independent concurrency review remains required.
 
-Verification binds ID, email hash, expiry and session generation. The authenticated user must match. A used link is idempotent; a changed email/generation, expired link or tampered signature is rejected. Verification does not authorize content, assign roles, establish age or verify performers.
+## Attempt budgets and private state
 
-## Mail and private data
+Authentication, recovery, MFA, verification and other public writes use serialized SQL attempt budgets, not a read-then-increment filesystem counter. IP-first ordering prevents blocked sources creating unlimited account rows. Rejected later scopes still consume earlier limits. Keys are HMACs under APP_KEY, not raw emails/IPs. Synchronized multi-process checks require exactly five of ten permitted operations. HMAC identifiers remain pseudonymous security data, not anonymous data. Daily pruning deletes expired budgets and old session metadata.
 
-Mail is disabled by default. Enabling it requires canonical APP_URL, a configured database queue, disabled raw failed-job storage, and implicit-TLS SMTP outside local loopback. Unsupported or log mailers are rejected outside test exceptions. Link origins never use the supplied Host header; enabled account email enforces the configured hostname. TLS certificate verification remains enabled. Proxy/scheme enforcement and operational SMTP-provider approval require deployment-specific evidence.
+CSRF, escaping, security headers and no-store/no-referrer remain enabled. Passwords, action tokens, factor keys and codes are excluded from flashed input. Known-event logging drops arbitrary messages/context and traces. Setup secrets and recovery codes never go in URLs or external QR requests. Backup, server/proxy access-log, worker-supervisor and SMTP-provider privacy remain creator deployment responsibilities. No external recipient is used by the loopback SMTP tests.
 
-Jobs contain encrypted recipient/purpose/timestamp data using the creator's APP_KEY. Reset tokens are hashed. Credentials and mail bodies are never intentionally added to application log context. New allowlisted events carry status and permitted IDs only. Tests cover template rendering, encrypted database jobs, worker expiry, queue failures, token rollback on delivery failure and synthetic SMTP delivery in a loopback-only sink. Production inbox delivery, deliverability, real provider TLS and independent privacy review are separate checks.
+## Security checks and release refusal
 
-The SMTP provider receives recipient addresses and action links. Creator web-server access logs must omit query strings on account-link paths; no-referrer/no-store helps browser disclosure but does not sanitize infrastructure logs. The configured logger does not cover custom channels, bootstrap failure output, worker-supervisor output or third-party provider logs. Retention/alerts and comprehensive privacy lifecycle remain unfinished.
+The configured pipeline runs dependency advisory checks, PHP syntax/Pint/PHPStan, six custom Semgrep rules, security-policy regressions, full application tests, fresh builds, migration checks and real HTTP/concurrency tests. The custom source rules are limited; zero findings is not complete clearance. Dependencies are locked and unchanged in this increment. Tool/action identities are pinned, but hosted infrastructure is not a byte-reproducibility claim.
 
-## Retained controls
+Unresolved Medium, High, Critical and unknown-severity findings block release. Missing, failed, empty, stale or wrong-candidate evidence and required incomplete reviews also block. Accepted/deferred is not fixed. Development mode never authorizes release. Required independent security, repository-history secret scanning, deployment-image assessment and complete M01 approval remain pending. Branch/tag protection, trusted external approval enforcement and a production release pipeline are not configured; repository administrators are not constrained by this CLI policy alone.
 
-Administrator routes require explicit true; paid bodies, drafts, classifications, owner-only quotes and report inbox remain protected. The guarded Entitlement model is not made mass-assignable for tests; fixtures explicitly populate it. Templates escape content. CSP restricts scripts/third parties, and security headers cover application/error responses. No media upload, remote user-selected URL fetch, wallet execution, callback settlement, fan balances or automatic debit exists.
+An attempted Chromium journey was blocked by runtime administrator policy. Browser/accessibility validation remains unverified; no browser-policy bypass was attempted. Real provider TLS/delivery, full load tests, secret-history/image scans and independent penetration testing remain requirements. The known upstream artifact downloader Buffer deprecation warning remains documented for review.
 
-The 200-basis-point fee remains exact TEST arithmetic. Quotes do not grant access. Self-hosted owners can change code/checkout; no claim of unbypassable licensing is made. No content, previews or complaints are transmitted to a licensor service.
+## Compatibility and rollback
 
-## Release policy and evidence
+Apply both additive security migrations before activation. Existing sessions must sign in again. Rolling back the MFA schema destroys factor/recovery/session state, so it is tested only on disposable databases. Prefer a forward fix. Do not expose pre-MFA code as an emergency bypass; maintain access restrictions, preserve current passwords and APP_KEY, invalidate all sessions and obtain security review first.
 
-Unresolved Medium, High and Critical findings block release. Unknown severity and incomplete/failed/empty/stale/wrong-candidate evidence block pending assessment. Accepted/deferred is not remediation. Register closures require named review and current verification; raw scanner findings above Low cannot be waived through that register. The default gate requires complete reviews and --development always reports release_allowed=false.
-
-Composer advisories are time-specific. PHPStan/Larastan, Pint and PHP syntax are separate checks. Six project-specific Semgrep rules and the existing Python pattern checks are narrow, not comprehensive SAST or penetration testing. Scanning engines/actions are pinned; source scans run offline with read-only input. Broader maintained coverage, independent authentication/security assessment, repository-history secrets and actual deployment-image review remain blocking. The full account milestone also remains incomplete.
-
-CI uses repository-read-only permission and retains allowlisted JUnit, dependency and normalized scanner summaries for 30 days. New SMTP test messages and application/server logs are excluded. Inventory is not a complete SBOM; these files are not signed provenance or durable release attestations. Public synthetic test values are not deployment credentials.
-
-Branch/tag protections, trusted external approvals and production deployment enforcement are not configured. This gate is a CLI/CI result, not a repository-administrator permission barrier. Production approval must bind externally controlled evidence to the final candidate.
-
-## Rollback and outstanding product work
-
-The new migration preserves users/content on its own rollback but removes account timestamps, queued mail and reset tokens. Stop workers, retain the latest password hashes and APP_KEY, and revoke all sessions before reverting to a pre-generation version. Never restore revoked sessions or obsolete passwords from a backup merely to pass rollback tests. See iterations/00.05.00.md for examples.
-
-MFA, device/session controls, privacy lifecycle, operational readiness, accessibility and deployment hardening remain unfinished. Content verification/consent/age assurance/removal workflows, payment and sanctions analysis, refunds and final licensing terms still need implementation and professional review. No main merge, production release, funds transfer or restricted-content enablement is approved by this document.
+No wallet transaction, restricted-content launch, media processing or final license approval is implemented by this increment. See [threat model](../security/THREAT_MODEL.md), [iteration](iterations/00.06.00.md) and [1.0 acceptance](ONE_ZERO_ACCEPTANCE.md).

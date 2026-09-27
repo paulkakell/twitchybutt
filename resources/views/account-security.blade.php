@@ -9,4 +9,5 @@
 <p><a href="/forgot-password">Request a password reset</a></p><p class="hint">A completed password reset signs out this account's existing sessions. You will need to sign in again.</p>
 @else<p role="status">Account email has not been enabled by this site operator. Verification and password recovery are unavailable.</p>@endif
 <p><a href="/account">Return to your account</a></p></section>
+<p><a href="/account/mfa">Multi-factor authentication</a> · <a href="/account/sessions">Active sessions</a></p>
 @endsection

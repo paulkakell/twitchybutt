@@ -2,7 +2,9 @@
 
 use App\Http\Middleware\AccountOrigin;
 use App\Http\Middleware\AccountSession;
+use App\Http\Middleware\RequireMfa;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\StrictThrottle;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -14,12 +16,13 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(web: __DIR__.'/../routes/web.php', commands: __DIR__.'/../routes/console.php', health: '/up')
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend([SecurityHeaders::class, AccountOrigin::class]);
-        $middleware->web(append: [AccountSession::class]);
+        $middleware->web(append: [AccountSession::class, RequireMfa::class]);
+        $middleware->alias(['strict' => StrictThrottle::class]);
         $middleware->redirectGuestsTo('/login');
         $middleware->redirectUsersTo('/account');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->dontFlash(['password', 'password_confirmation', '_token', 'token']);
+        $exceptions->dontFlash(['password', 'password_confirmation', '_token', 'token', 'code', 'recovery_code', 'secret']);
         $exceptions->respond(function (Response $response, Throwable $exception, Request $request): Response {
             return SecurityHeaders::apply($request, $response);
         });

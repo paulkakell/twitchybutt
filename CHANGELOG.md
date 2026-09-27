@@ -1,5 +1,19 @@
 # Change log
 
+## 00.06.00 - MFA and session controls (unreleased)
+
+Classification: additive account-security features and defensive fixes. Reference #9. Continue toward 01.00.00 from 00.05.00; the delivery branch is not a completed 1.0 product.
+
+Add required administrator and optional member MFA with encrypted pending/confirmed TOTP keys, expiring enrollment, monotonic code consumption, hashed one-use recovery codes, password-confirmed enrollment/rotation, and deny-by-default partial-session boundaries. Preserve MFA through password recovery. A confirmed factor remains required even if its stored key is missing. Enrollment revokes prior sessions; do not adopt an unrelated newer authentication generation after concurrent reset.
+
+Use transactional SQL attempt budgets with HMAC scope identifiers and bounded retries so parallel requests cannot lose counter updates. Test synchronized contention with ten independent processes; reject before allocating account rows when an IP is already limited.
+
+Add owner-only session inventory, individual/all-session revocation, idle/absolute deadlines and seven-day metadata cleanup. Session metadata deliberately omits browser fingerprints and IP addresses. Add unit, integration, negative, real HTTP/CSRF and concurrent code-consumption tests. Prior positive operator fixtures explicitly represent an MFA-completed session; negative tests use password-only sessions. Existing assertions are retained.
+
+Compatibility: additive migration; all pre-registry sessions must sign in again. Studio access requires MFA enrollment. New environment options control idle/absolute lifetimes. Key material is never placed in URLs, logs or flash input. No dependency lock or payment/fee behavior changes. MFA rollback removes security state and must not be used as an operational bypass. All above-Low and incomplete-evidence release blockers remain. Results belong to the exact commit and CI run in the PR/working report.
+
+Add recently MFA-authenticated factor replacement without disabling the old factor before confirmation. Bind pending enrollment to the auth generation, and clear expired replacement state without deleting confirmed factors. Fix a local replacement-test construction error before publication; the full final suite is rerun. Browser QA remains open after Chromium navigation was blocked by the runtime.
+
 ## 00.05.00 - Verified email and recovery (unreleased)
 
 Classification: additive account features, security regressions and deployment configuration; breaking session compatibility requires existing users to sign in again. Reference #7. Baseline c6571ce9dcaf09919252fc086491f8bd4387fd00. M01 remains incomplete. The former proposed crypto version is rescheduled rather than represented as delivered.

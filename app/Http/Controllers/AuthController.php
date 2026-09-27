@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Rules\PasswordBytes;
+use App\Services\SessionRegistry;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -43,11 +44,14 @@ class AuthController
         }
         $request->session()->regenerate();
 
-        return redirect('/account');
+        return redirect($request->user() instanceof User && $request->user()->hasMfa() ? '/account/mfa/challenge' : '/account');
     }
 
     public function logout(Request $request): RedirectResponse
     {
+        if ($request->user() instanceof User) {
+            app(SessionRegistry::class)->revokeCurrent($request->session(), $request->user());
+        }
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
