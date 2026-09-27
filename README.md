@@ -1,12 +1,12 @@
 # TwitchyButt CMS
 
-Version **00.03.00**. A self-hosted, content-neutral creator CMS foundation. Development preview, not a production platform.
+Version **00.03.00**. Self-hosted, content-neutral creator software. **Development preview, not a production platform.**
 
-Each creator operates their own application and database. There is no central content hosting. The intended supported payment flow allocates a 2% licensing fee. This release calculates immutable **TEST invoice quotes only**. It accepts no real funds, has no wallet connection, and never treats a quote as a payment.
+Creators operate their own application and database. No central content hosting is implemented. The intended payment flow allocates a 2% licensing fee; this release only calculates **TEST invoice quotes**. No wallet is connected, no funds are accepted, and quotes never unlock paid content.
 
 ## Run a local preview
 
-Requires 64-bit PHP 8.3 or later within the supported framework range, Composer 2, and PHP PDO SQLite, mbstring, XML, DOM, ctype, fileinfo and OpenSSL extensions. PostgreSQL additionally requires pdo_pgsql. Dependency versions are fixed by composer.lock. Use a separate development machine or isolated environment.
+Use an isolated development machine with 64-bit PHP 8.3+, Composer 2, PDO SQLite, mbstring, XML/DOM, ctype, fileinfo and OpenSSL. PostgreSQL also requires pdo_pgsql. Composer checks the locked package requirements.
 
 ```sh
 git clone --branch build/00.03.00 https://github.com/paulkakell/twitchybutt.git
@@ -21,23 +21,27 @@ php artisan cms:doctor
 php artisan serve --host=127.0.0.1 --port=8000
 ```
 
-The administrator command prompts for a new password and confirmation. It refuses an existing email; it does not silently promote an existing member. No default administrator or password is shipped. Keep `.env`, the database, session files and logs private. The development server is not a production deployment recommendation. Only `public/` may ever be a web document root.
+Administrator provisioning prompts for a password and confirmation. No default administrator or password exists. Existing members are not silently promoted. Passwords require at least 12 characters with letters and numbers and at most 72 UTF-8 bytes; null bytes are rejected. Keep `.env`, the database, sessions and logs private. The development server is not a public deployment solution. Only `public/` may be a web document root.
 
-## Features and examples
+## Implemented features and examples
 
-- **Accounts:** visit `/register` to create a member; `/login` and `/logout` use session authentication. Members cannot access `/studio`. Email verification, password recovery and MFA remain unimplemented.
-- **Publishing:** in `/studio/posts/new`, write a general post, choose `published`, and set price `0` for open access. Drafts are not publicly visible. Edit any owned installation post through the studio. Plain text is escaped; HTML and media uploads are not supported.
-- **Classification:** `general`, `restricted`, or `unclassified`. For example, a restricted draft can be reviewed privately by the administrator. Restricted/unclassified publication is rejected server-side, including when a client forges the form. These are workflow labels, not legal exemptions.
-- **Paid-post protection:** setting `20` creates a locked post priced at 20 TEST. Only a valid, unrevoked, unexpired entitlement permits a member to read it. This release has no public or administrator entitlement-grant endpoint. Tests create fixtures directly; they are not payment evidence.
-- **Test invoices:** signed-in members can create a quote for a published general paid post. The server snapshots 20.000000 total, 0.400000 fee and 19.600000 creator allocation. Client-supplied prices/fees are ignored. Duplicate idempotency keys return the same snapshot for the same buyer and post; reuse for another post is rejected.
-- **Reports:** `/report` accepts text reports without an account. Only administrators can read `/studio/reports`. It is an intake prototype, not a complete statutory notice-and-removal system.
-- **Diagnostics:** `/up` is liveness only; `php artisan cms:doctor` checks configuration and database connectivity without printing secrets. Logs are structured JSON with IDs, not post bodies or passwords.
+**Accounts:** register at `/register`, sign in at `/login`, and sign out with the form. Members cannot access `/studio`. Email verification, password recovery and MFA are not implemented.
 
-## Configuration
+**Publishing:** visit `/studio/posts/new`, enter plain text, choose `general` and `published`, and use price `0` for open access. Drafts stay private. Edit and unpublish posts through the studio. HTML is escaped; media uploads are not included.
 
-See `.env.example` and `docs/OPERATIONS.md`. `CMS_PAYMENTS_ENABLED` and `CMS_RESTRICTED_PUBLISHING_ENABLED` are reserved, false-only flags: setting either true prevents startup. Neither flag can activate absent integrations. Production mode rejects debugging or insecure session cookies but this does not certify production readiness.
+**Classification:** `general`, `restricted`, or `unclassified`. Restricted and unclassified posts can be saved as private drafts but cannot be published, including through forged requests. These labels are not legal exemptions.
 
-## Validation
+**Paid access:** price `20` creates a locked general post. Reading requires a valid, unexpired, unrevoked entitlement. No HTTP endpoint grants entitlements in this release; test fixtures are not payment evidence. Existing valid access does not depend on a licensing service.
+
+**Invoice previews:** signed-in members can request a quote for a published general paid post. For 20 TEST, the server records 20.000000 total, 0.400000 fee, and 19.600000 creator allocation. Browser-supplied prices, fees and payment status are ignored. Duplicate buyer/idempotency keys return the original snapshot; reuse for another post returns 409. Quotes are visible only to their buyer and do not initiate payments.
+
+**Reports:** `/report` accepts text reports without an account; administrators read them at `/studio/reports`. No attachments, emergency response, notifications or complete statutory case workflow are implemented.
+
+**Diagnostics:** `/up` is liveness only. `php artisan cms:doctor` checks configuration and database connectivity without printing secrets. Structured JSON logs retain event names and IDs rather than post bodies or credentials.
+
+## Configuration and validation
+
+See `.env.example` and `docs/OPERATIONS.md` for every exposed setting and examples. Both `CMS_PAYMENTS_ENABLED` and `CMS_RESTRICTED_PUBLISHING_ENABLED` are false-only reserved flags: setting either true prevents startup. Production mode rejects debugging, insecure cookies and ephemeral session/cache stores; this does not certify production readiness.
 
 ```sh
 composer validate --strict
@@ -48,12 +52,14 @@ vendor/bin/phpunit
 python3 scripts/security_scan.py
 ```
 
-GitHub Actions installs from the lock in fresh SQLite and PostgreSQL environments, runs syntax/style/type checks, dependency audit, forward/rollback migrations, unit/integration/regression checks, cached build checks, real-HTTP CSRF checks and a small performance smoke check. The first-commit-only lock bootstrap has narrowly scoped repository write permission on `build/00.03.00`; validation jobs remain read-only. Check the actual run conclusion, not the presence of a workflow file.
+Run tests only against disposable databases. CI checks fresh SQLite/PostgreSQL installations, dependency advisories, syntax/style/types, source guardrails, migrations forward/backward, unit/integration/regression behavior, cached builds, real HTTP/CSRF behavior and small performance budgets. Test configuration isolates cache/session state from runner variables.
 
-## Not implemented or approved
+The one-time dependency-lock generation jobs have been removed. Current CI has repository read permission only and installs from composer.lock. Failed runs and corrections are documented in `docs/VALIDATION_HISTORY.md`; a planned check is not a pass. Actual final results are in the pull request and the Drive build report.
 
-Real or testnet blockchain transactions, contract deployment/audit, crypto network/token selection, treasury address, recurring billing, refunds, tax calculation, media hosting/transcoding, performer verification, viewer age assurance, statutory case handling, live streaming, email delivery, password recovery, MFA, production installation/upgrades/backups and final commercial license terms. Do not accept customer money or publish restricted material using this preview.
+## Remaining release gates
 
-See `CHANGELOG.md`, `docs/ARCHITECTURE.md`, `docs/OPERATIONS.md`, `docs/SECURITY.md`, and `docs/RELEASE_00.03.00.md`. Tracking: issue #1. Main is preserved for review via a pull request. No release tag is created until review and release gates are complete.
+No real or testnet transfers, split contract, production token/network, treasury address, subscriptions/automatic renewals, refunds/taxes, media pipeline, performer/viewer verification, statutory case automation, email/reset/MFA, turnkey deployment/upgrades/backups or final commercial license is implemented or approved. Do not accept customer funds or publish restricted content with this preview.
 
-Copyright remains with the project owner. Public repository visibility does not grant an open-source or commercial production-use license. Third-party packages retain their own licenses; inventory them with `composer licenses`.
+See `CHANGELOG.md`, `docs/ARCHITECTURE.md`, `docs/OPERATIONS.md`, `docs/SECURITY.md`, and `docs/RELEASE_00.03.00.md`. Tracking issue: #1. Main remains the previous baseline pending review; no release tag has been created.
+
+Copyright remains with the project owner. Public visibility does not grant an open-source or commercial-use license. Third-party packages retain their own licenses; use `composer licenses` to inventory them.

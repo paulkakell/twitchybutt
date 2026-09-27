@@ -3,16 +3,16 @@
   <testsuites><testsuite name="TwitchyButt CMS"><directory>tests</directory></testsuite></testsuites>
   <source><include><directory>app</directory></include></source>
   <php>
-    <env name="APP_ENV" value="testing" force="true"/>
-    <env name="APP_DEBUG" value="false" force="true"/>
-    <env name="APP_KEY" value="base64:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=" force="true"/>
+    <server name="APP_ENV" value="testing" force="true"/>
+    <server name="APP_DEBUG" value="false" force="true"/>
+    <server name="APP_KEY" value="base64:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=" force="true"/>
+    <server name="CACHE_STORE" value="array" force="true"/>
+    <server name="SESSION_DRIVER" value="array" force="true"/>
+    <server name="SESSION_SECURE_COOKIE" value="false" force="true"/>
+    <server name="BCRYPT_ROUNDS" value="4" force="true"/>
+    <server name="CMS_PAYMENTS_ENABLED" value="false" force="true"/>
+    <server name="CMS_RESTRICTED_PUBLISHING_ENABLED" value="false" force="true"/>
     <env name="DB_CONNECTION" value="sqlite"/>
     <env name="DB_DATABASE" value=":memory:"/>
-    <env name="CACHE_STORE" value="array" force="true"/>
-    <env name="SESSION_DRIVER" value="array" force="true"/>
-    <env name="SESSION_SECURE_COOKIE" value="false" force="true"/>
-    <env name="BCRYPT_ROUNDS" value="4" force="true"/>
-    <env name="CMS_PAYMENTS_ENABLED" value="false" force="true"/>
-    <env name="CMS_RESTRICTED_PUBLISHING_ENABLED" value="false" force="true"/>
   </php>
 </phpunit>

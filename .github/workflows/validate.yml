@@ -1,7 +1,7 @@
 name: Application validation
 on:
   push:
-    branches: ["build/00.03.00"]
+    branches: ["main", "build/00.03.00"]
   pull_request:
   workflow_dispatch:
 permissions:
@@ -10,36 +10,7 @@ concurrency:
   group: validation-${{ github.ref }}
   cancel-in-progress: false
 jobs:
-  initial-lock:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/build/00.03.00'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    permissions:
-      contents: write
-    outputs:
-      sha: ${{ steps.commit.outputs.sha }}
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
-      - name: Resolve the explicitly added missing test dependency
-        run: |
-          set -eu
-          if ! grep -q '"name": "mockery/mockery"' composer.lock; then
-            php scripts/prepare.php
-            cp .env.example .env
-            composer update mockery/mockery --with-dependencies --no-interaction --prefer-dist --no-scripts
-            vendor/bin/pint
-            composer dump-autoload --no-interaction
-            git config user.name 'TwitchyButt Build'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git add composer.lock app bootstrap config database public routes scripts tests
-            git commit -m 'build(00.03.00): lock the missing test dependency and format hardening checks (#1)'
-            git push origin HEAD:build/00.03.00
-          fi
-      - id: commit
-        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
   validate:
-    needs: initial-lock
-    if: ${{ !cancelled() && (needs.initial-lock.result == 'success' || needs.initial-lock.result == 'skipped') }}
     strategy:
       fail-fast: false
       matrix:
@@ -73,7 +44,6 @@ jobs:
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
-          ref: ${{ needs.initial-lock.outputs.sha || github.sha }}
           persist-credentials: false
       - name: Fresh locked installation
         run: |
@@ -88,8 +58,11 @@ jobs:
           composer validate --strict
           composer install --no-interaction --prefer-dist
           composer check-platform-reqs
-      - name: Dependency vulnerability audit
-        run: composer audit --locked --no-interaction
+      - name: Dependency vulnerability audit and license inventory
+        run: |
+          set -eu
+          composer audit --locked --no-interaction
+          composer licenses --format=json > build/dependency-licenses.json
       - name: PHP syntax, style, type analysis and targeted source checks
         run: |
           set -eu
@@ -125,6 +98,7 @@ jobs:
           python3 scripts/http_smoke.py
       - name: Validate locked production dependency install
         run: |
+          set -eu
           rm -rf vendor
           composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
           composer check-platform-reqs --no-dev
