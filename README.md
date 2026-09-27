@@ -1,8 +1,10 @@
 # TwitchyButt CMS
 
-Application version **00.07.00**, on the `build/01.00.00` delivery track. **Unreleased development preview; release approval is blocked.** This increment adds creator-local private media. It does not enable real payments or public restricted-content operations.
+Application version **00.07.01**, on the `build/01.00.00` delivery track. **Unreleased development preview; release approval is blocked.** This increment adds creator-local private media. It does not enable real payments or public restricted-content operations.
 
 Content-neutral creator software: each creator owns their application, domain, database, media, mail service and customer records. The intended supported checkout allocates 2% to licensing; current TEST quotes do not transfer money or grant access. No central content hosting, media proxy or licensor backup store is implemented.
+
+See [00.07.01 validation repair](docs/iterations/00.07.01.md) for explicit CI prerequisites and regression coverage. No release approval is implied by this patch.
 
 ## Run an isolated local preview
 

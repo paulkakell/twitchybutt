@@ -402,7 +402,9 @@ final class PrivateMediaTest extends TestCase
 
     public function test_media_tools_do_not_inherit_application_secrets(): void
     {
+        $originalLibraryPath = getenv('LD_LIBRARY_PATH');
         putenv('MEDIA_SYNTHETIC_SECRET=private-test-sentinel');
+        putenv('LD_LIBRARY_PATH=/synthetic-library-path');
         try {
             $method = new \ReflectionMethod(MediaProcessor::class, 'command');
             $process = $method->invoke(app(MediaProcessor::class), ['/usr/bin/true']);
@@ -411,6 +413,42 @@ final class PrivateMediaTest extends TestCase
             self::assertFalse($process->getEnv()['LD_LIBRARY_PATH']);
         } finally {
             putenv('MEDIA_SYNTHETIC_SECRET');
+            putenv($originalLibraryPath === false ? 'LD_LIBRARY_PATH' : 'LD_LIBRARY_PATH='.$originalLibraryPath);
+        }
+    }
+
+    public function test_media_subprocess_has_only_safe_environment_values(): void
+    {
+        putenv('MEDIA_PROCESS_SENTINEL=do-not-inherit-this-value');
+        $_ENV['MEDIA_ENV_SENTINEL'] = 'private-env-value';
+        $_SERVER['MEDIA_SERVER_SENTINEL'] = 'private-server-value';
+        try {
+            $method = new \ReflectionMethod(MediaProcessor::class, 'command');
+            $process = $method->invoke(app(MediaProcessor::class), ['/usr/bin/env']);
+            $process->mustRun();
+            $output = $process->getOutput();
+            self::assertStringNotContainsString('SENTINEL', $output);
+            self::assertStringNotContainsString('APP_KEY', $output);
+            self::assertStringNotContainsString('LD_LIBRARY_PATH', $output);
+            self::assertStringContainsString('PATH=/usr/bin:/bin', $output);
+            self::assertStringContainsString('LC_ALL=C', $output);
+        } finally {
+            putenv('MEDIA_PROCESS_SENTINEL');
+            unset($_ENV['MEDIA_ENV_SENTINEL'], $_SERVER['MEDIA_SERVER_SENTINEL']);
+        }
+    }
+
+    public function test_media_environment_handles_an_absent_library_override(): void
+    {
+        $previous = getenv('LD_LIBRARY_PATH');
+        putenv('LD_LIBRARY_PATH');
+        try {
+            $method = new \ReflectionMethod(MediaProcessor::class, 'command');
+            $process = $method->invoke(app(MediaProcessor::class), ['/usr/bin/env']);
+            $process->mustRun();
+            self::assertStringNotContainsString('LD_LIBRARY_PATH=', $process->getOutput());
+        } finally {
+            putenv($previous === false ? 'LD_LIBRARY_PATH' : 'LD_LIBRARY_PATH='.$previous);
         }
     }
 
