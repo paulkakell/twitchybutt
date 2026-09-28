@@ -1,0 +1,48 @@
+name: Repository setup
+'on':
+  push:
+    branches: [main, maintenance/community-20260927]
+    paths:
+      - '.github/workflows/repository-setup.yml'
+      - '.github/DISCUSSION_WELCOME.md'
+      - '.github/DISCUSSION_TEMPLATE/**'
+      - '.github/FUNDING.yml'
+      - 'scripts/setup_repository.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: repository-community-setup
+  cancel-in-progress: false
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      discussions: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Inspect public community and funding state
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -B scripts/setup_repository.py
+  apply:
+    if: github.repository == 'paulkakell/twitchybutt' && github.ref == 'refs/heads/main'
+    needs: inspect
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      discussions: write
+      issues: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Create missing labels and one community welcome
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -B scripts/setup_repository.py --apply

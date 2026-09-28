@@ -1,0 +1,59 @@
+version: 2
+updates:
+  - package-ecosystem: composer
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Denver
+    open-pull-requests-limit: 10
+    assignees: [paulkakell]
+    allow:
+      - dependency-type: all
+    commit-message:
+      prefix: chore
+      include: scope
+    cooldown:
+      default-days: 7
+    groups:
+      composer-security:
+        applies-to: security-updates
+        patterns: ["*"]
+      composer-runtime:
+        applies-to: version-updates
+        dependency-type: production
+        patterns: ["*"]
+        update-types: [minor, patch]
+      composer-development:
+        applies-to: version-updates
+        dependency-type: development
+        patterns: ["*"]
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:30"
+      timezone: America/Denver
+    open-pull-requests-limit: 5
+    assignees: [paulkakell]
+    commit-message:
+      prefix: ci
+      include: scope
+    cooldown:
+      default-days: 7
+    groups:
+      actions-security:
+        applies-to: security-updates
+        patterns: ["*"]
+      actions-routine:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: [minor, patch]
+# Major version updates remain individual PRs; none are ignored.
+# Cooldown/schedules govern version updates, not security updates.
+# Default dependency/ecosystem labels are created automatically by Dependabot.
+# Security updates still require their separate repository setting to be enabled.
+# Never add auto-dismissal, auto-approval or auto-merge to bypass release gates.

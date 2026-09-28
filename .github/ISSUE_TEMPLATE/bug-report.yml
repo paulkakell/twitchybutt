@@ -1,0 +1,57 @@
+name: Bug report
+description: Report a reproducible problem in the development preview.
+title: "[Bug] "
+labels: [bug, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is a public tracker. Never attach secrets, private media, personal data, wallet keys, .env files or unredacted logs.
+        For suspected vulnerabilities, stop and follow https://github.com/paulkakell/twitchybutt/security/policy instead.
+  - type: input
+    id: version
+    attributes:
+      label: Version and commit
+      description: Include VERSION, branch and commit SHA where possible.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: PHP, Composer, database and OS versions; installation method. No credentials or private hostnames.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+      description: Use a minimal example and synthetic data on your own disposable development installation.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized evidence and related issues
+      description: Remove tokens, cookies, addresses and customer information before sharing. A minimal error excerpt is enough.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and used only synthetic or sanitized evidence.
+          required: true
+        - label: This report contains no suspected vulnerability details or private information.
+          required: true
