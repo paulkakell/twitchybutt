@@ -1,4 +1,4 @@
-# Recover the exact 00.07.01 source and locked tools for local validation.
+# Recover the exact development source and locked tools for local validation.
 # This development archive is not a production release artifact.
 name: Development workspace
 on:
@@ -12,9 +12,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - name: Provision explicit development prerequisites
         run: bash scripts/ci_media_prerequisites.sh
       - name: Assemble tracked source and locked development tools
@@ -25,6 +26,7 @@ jobs:
           composer audit --locked
           mkdir -p /tmp/cms-workspace/runtime/bin /tmp/cms-workspace/runtime/lib /tmp/cms-workspace/runtime/extensions
           git archive HEAD | tar -x -C /tmp/cms-workspace
+          git bundle create /tmp/cms-workspace/source.bundle --all
           cp -a vendor /tmp/cms-workspace/vendor
           cp "$(command -v composer)" /tmp/cms-workspace/composer.phar
           cp /usr/bin/php8.3 /tmp/cms-workspace/runtime/bin/php
