@@ -6,7 +6,8 @@ on:
     branches: ['build/01.00.00']
     paths: ['.github/workflows/security-inventory.yml']
   workflow_dispatch:
-permissions: {}
+permissions:
+  contents: read
 jobs:
   inventory:
     if: github.repository == 'paulkakell/twitchybutt' && github.ref == 'refs/heads/build/01.00.00'
@@ -48,7 +49,7 @@ jobs:
                   return {'available': False, 'reason': 'Unexpected API response'}
 
           report = {'generated_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'repository': repo, 'inspection_commit': os.environ['GITHUB_SHA'], 'alerts': {}}
-          for ref in (None, 'refs/heads/main', 'refs/heads/build/01.00.00', 'refs/pull/10/merge'):
+          for ref in (None, 'refs/heads/main', 'refs/heads/build/01.00.00', 'refs/pull/10/head'):
               params = {'state': 'open', 'per_page': 100}
               if ref:
                   params['ref'] = ref
@@ -61,6 +62,19 @@ jobs:
                       alerts.append({'number': alert['number'], 'state': alert['state'], 'url': alert.get('html_url'), 'rule_id': rule.get('id'), 'description': rule.get('description'), 'severity': rule.get('security_severity_level'), 'tool': (alert.get('tool') or {}).get('name'), 'ref': instance.get('ref'), 'commit_sha': instance.get('commit_sha'), 'location': instance.get('location'), 'message': (instance.get('message') or {}).get('text')})
                   result.update(count=len(alerts), findings=alerts)
               report['alerts'][ref or 'default'] = result
+          report['tracked_alerts'] = {}
+          for number in (1, 2):
+              result = get(f'repos/{repo}/code-scanning/alerts/{number}')
+              if result['available']:
+                  data = result['data']
+                  result['data'] = {key: data.get(key) for key in ('number', 'state', 'fixed_at', 'dismissed_at', 'dismissed_reason', 'html_url')}
+              report['tracked_alerts'][str(number)] = result
+          report['ref_heads'] = {}
+          for branch in ('main', 'build/01.00.00'):
+              result = get(f'repos/{repo}/git/ref/heads/{branch}')
+              if result['available']:
+                  result['data'] = {'sha': (result['data'].get('object') or {}).get('sha')}
+              report['ref_heads'][branch] = result
           analyses = get(f'repos/{repo}/code-scanning/analyses?per_page=100', True)
           if analyses['available']:
               analyses['analyses'] = [{key: item.get(key) for key in ('id', 'ref', 'commit_sha', 'created_at', 'error', 'results_count', 'category', 'tool')} for item in analyses.pop('data')]
@@ -82,10 +96,12 @@ jobs:
           # Detailed findings stay in the artifact, not in public workflow logs.
           for ref, result in report['alerts'].items():
               print(json.dumps({'ref': ref, 'available': result['available'], 'open_count': result.get('count')}))
+          for number, result in report['tracked_alerts'].items():
+              print(json.dumps({'alert_number': number, 'available': result['available'], 'state': (result.get('data') or {}).get('state')}))
           if not report['alerts']['default']['available']:
               raise SystemExit('Security inventory unavailable; fail closed')
           PY
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         if: always()
         with:
           name: security-inventory-${{ github.sha }}

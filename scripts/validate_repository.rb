@@ -62,9 +62,18 @@ begin
   end
   chooser = documents.fetch('.github/ISSUE_TEMPLATE/config.yml')
   check(chooser['blank_issues_enabled'] == false, 'Blank issue intake disabled')
-  links = chooser.fetch('contact_links').map { |link| link.fetch('url') }
-  check(links.include?('https://github.com/paulkakell/twitchybutt/security/policy'), 'Private-reporting policy linked')
-  check(links.include?('https://github.com/paulkakell/twitchybutt/discussions'), 'Community support linked')
+  contacts = chooser.fetch('contact_links')
+  check(contacts.is_a?(Array) && !contacts.empty?, 'Contact links must be a nonempty array')
+  check(contacts.all? { |link| link.is_a?(Hash) && link['url'].is_a?(String) }, 'Contact URLs must be strings')
+  links = contacts.map { |link| link.fetch('url') }
+  # Compare each complete URL explicitly. Never accept a trusted URL embedded in
+  # an attacker-controlled host, path, query, fragment or userinfo component.
+  policy_url = 'https://github.com/paulkakell/twitchybutt/security/policy'
+  support_url = 'https://github.com/paulkakell/twitchybutt/discussions'
+  check(links.any? { |url| url == policy_url }, 'Private-reporting policy linked')
+  check(links.any? { |url| url == support_url }, 'Community support linked')
+  check(links.all? { |url| url == policy_url || url == support_url }, 'Only canonical owner contact destinations')
+  check(links.uniq.length == links.length, 'Contact destinations must not be duplicated')
   check(documents.fetch('.github/FUNDING.yml') == { 'github' => ['paulkakell'] }, 'Only owner funding destination')
 
   dependabot = documents.fetch('.github/dependabot.yml')
