@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and community support
+    url: https://github.com/paulkakell/twitchybutt/discussions
+    about: Ask usage questions or discuss ideas before filing an actionable issue.
+  - name: Security vulnerability reporting
+    url: https://github.com/paulkakell/twitchybutt/security/policy
+    about: Read the private-reporting policy. Do not disclose vulnerabilities in public issues or discussions.

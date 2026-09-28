@@ -6,6 +6,14 @@ Content-neutral creator software: each creator owns their application, domain, d
 
 See [00.07.01 validation repair](docs/iterations/00.07.01.md) for explicit CI prerequisites and regression coverage. No release approval is implied by this patch.
 
+## Community and maintenance
+
+Use the [issue forms](https://github.com/paulkakell/twitchybutt/issues/new/choose) for bugs, documentation corrections and scoped roadmap requests. Ask questions and explore ideas in [Discussions](https://github.com/paulkakell/twitchybutt/discussions). Read [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md) before sharing evidence; never post secrets, private media or vulnerability details publicly.
+
+[Repository administration](docs/REPOSITORY_ADMINISTRATION.md) documents sponsorship prerequisites, Dependabot version/security grouping, review rules and separately controlled GitHub security settings. Configuration does not imply release approval or successful activation of an administrator-only feature. Application CI has repository read permission; the separate main-only setup job can create missing labels and one welcome discussion, not write source or change administrator settings.
+
+Main contains the 00.03.00 development baseline and repository maintenance from PR #11. This branch retains the newer 00.07.01 candidate in draft PR #10; use the branch-specific preview command below. Neither integration nor a community announcement authorizes a production release. The editable roadmap and repository snapshot are not automatically synchronized.
+
 ## Run an isolated local preview
 
 Use 64-bit PHP 8.3+, Composer 2 and the locked extensions. SQLite requires pdo_sqlite; PostgreSQL additionally requires pdo_pgsql. Media opt-in requires GD with JPEG/PNG/WebP support and a PCNTL-enabled worker; optional video requires compatible FFmpeg/FFprobe. CI records the actual external tool versions rather than assuming they are Composer dependencies.

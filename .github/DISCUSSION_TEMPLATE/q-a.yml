@@ -1,0 +1,26 @@
+title: "[Q&A] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ask development-preview questions here. Search previous discussions first.
+        Do not share credentials, personal information, private media or vulnerability details. Security reports follow SECURITY.md.
+  - type: input
+    id: version
+    attributes:
+      label: Version, branch and environment
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: What are you trying to accomplish?
+    validations:
+      required: true
+  - type: textarea
+    id: tried
+    attributes:
+      label: What have you tried and what happened?
+      description: Include only sanitized examples and public documentation links.
+    validations:
+      required: true

@@ -1,0 +1,23 @@
+name: Repository configuration
+'on':
+  pull_request:
+  push:
+    branches: [main, maintenance/community-20260927]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: repository-config-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  configuration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Validate repository configuration
+        run: ruby scripts/validate_repository.rb
+      - name: Test setup guards and idempotency without network access
+        run: python3 -B -m unittest discover -s tests/repository -v
