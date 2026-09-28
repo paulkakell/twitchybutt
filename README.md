@@ -6,6 +6,12 @@ Version **00.03.00**. Self-hosted, content-neutral creator software. **Developme
 
 [Read the full product roadmap](ROADMAP.md) or [add ideas in the editable Google Sheet](https://docs.google.com/spreadsheets/d/1bdbGDfaQMY68vkWfJhkeO3uBuDx-qHyqr8Vjjp1av_A/edit). Roadmap documentation revision **00.03.01** contains 100 items, ten proposed milestones, open decisions, acceptance criteria and release controls. Application VERSION is unchanged. Sheet edits do not automatically synchronize to GitHub.
 
+## Community and maintenance
+
+Use the [issue forms](https://github.com/paulkakell/twitchybutt/issues/new/choose) for bugs, documentation corrections and scoped roadmap requests. Ask questions and explore ideas in [Discussions](https://github.com/paulkakell/twitchybutt/discussions). Read [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md) before sharing evidence; never post secrets, private media or vulnerability details publicly.
+
+[Repository administration](docs/REPOSITORY_ADMINISTRATION.md) documents sponsorship prerequisites, Dependabot version/security grouping, review rules and separately controlled GitHub security settings. Configuration does not imply release approval or successful activation of an administrator-only feature.
+
 Creators operate their own application and database. No central content hosting is implemented. The intended payment flow allocates a 2% licensing fee; this release only calculates **TEST invoice quotes**. No wallet is connected, no funds are accepted, and quotes never unlock paid content.
 
 ## Run a local preview
@@ -13,7 +19,7 @@ Creators operate their own application and database. No central content hosting 
 Use an isolated development machine with 64-bit PHP 8.3+, Composer 2, PDO SQLite, mbstring, XML/DOM, ctype, fileinfo and OpenSSL. PostgreSQL also requires pdo_pgsql. Composer checks the locked package requirements.
 
 ```sh
-git clone --branch build/00.03.00 https://github.com/paulkakell/twitchybutt.git
+git clone --branch main https://github.com/paulkakell/twitchybutt.git
 cd twitchybutt
 cp .env.example .env
 php scripts/prepare.php
@@ -58,12 +64,12 @@ python3 scripts/security_scan.py
 
 Run tests only against disposable databases. CI checks fresh SQLite/PostgreSQL installations, dependency advisories, syntax/style/types, source guardrails, migrations forward/backward, unit/integration/regression behavior, cached builds, real HTTP/CSRF behavior and small performance budgets. Test configuration isolates cache/session state from runner variables.
 
-The one-time dependency-lock generation jobs have been removed. Current CI has repository read permission only and installs from composer.lock. Failed runs and corrections are documented in `docs/VALIDATION_HISTORY.md`; a planned check is not a pass. Actual final results are in the pull request and the Drive build report.
+The one-time dependency-lock generation jobs have been removed. Application validation has repository read permission only and installs from composer.lock. The separate community setup job can create labels/discussions on main but cannot write application code or change administrator-only settings. Failed runs and corrections are documented in `docs/VALIDATION_HISTORY.md`; a planned check is not a pass. Actual final results are in the pull request and the Drive build report.
 
 ## Remaining release gates
 
-No real or testnet transfers, split contract, production token/network, treasury address, subscriptions/automatic renewals, refunds/taxes, media pipeline, performer/viewer verification, statutory case automation, email/reset/MFA, turnkey deployment/upgrades/backups or final commercial license is implemented or approved. Do not accept customer funds or publish restricted content with this preview.
+No real or testnet transfers, split contract, production token/network, treasury address, subscriptions/automatic renewals, refunds/taxes, media pipeline, performer/viewer verification, statutory case automation, email/reset/MFA, turnkey deployment/upgrades/backups or final commercial license is implemented or approved on this main baseline. Do not accept customer funds or publish restricted content with this preview.
 
-See `CHANGELOG.md`, `docs/ARCHITECTURE.md`, `docs/OPERATIONS.md`, `docs/SECURITY.md`, and `docs/RELEASE_00.03.00.md`. Tracking issue: #1. Main remains the previous baseline pending review; no release tag has been created.
+See `CHANGELOG.md`, `docs/ARCHITECTURE.md`, `docs/OPERATIONS.md`, `docs/SECURITY.md`, and `docs/RELEASE_00.03.00.md`. Foundation and roadmap work have been integrated into main. The newer application candidate remains in draft PR #10, tracked by #9; its unmerged features and release evidence must not be attributed to this main baseline. No release tag has been created.
 
 Copyright remains with the project owner. Public visibility does not grant an open-source or commercial-use license. Third-party packages retain their own licenses; use `composer licenses` to inventory them.

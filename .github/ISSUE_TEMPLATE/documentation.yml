@@ -1,0 +1,26 @@
+name: Documentation correction
+description: Report unclear, incorrect or missing documentation.
+title: "[Docs] "
+labels: [documentation, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: Please keep all examples public-safe. Never include credentials, personal data or private security reports.
+  - type: input
+    id: location
+    attributes:
+      label: Page or repository path
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is incorrect or missing?
+    validations:
+      required: true
+  - type: textarea
+    id: correction
+    attributes:
+      label: Suggested correction and how to verify it
+    validations:
+      required: true
