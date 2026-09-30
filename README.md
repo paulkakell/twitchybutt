@@ -1,10 +1,10 @@
 # TwitchyButt CMS
 
-Application version **00.08.00**, continuing the 01.00.00 delivery track on `main`. **Unreleased development preview; release approval is blocked.** The development baseline includes account security and creator-local private media. It does not enable real payments or public restricted-content operations.
+Application version **00.09.00**, continuing the 01.00.00 delivery track on `main`. **Unreleased development preview; release approval is blocked.** The development baseline includes account security and creator-local private media. It does not enable real payments or public restricted-content operations.
 
 Content-neutral creator software: each creator owns their application, domain, database, media, mail service and customer records. The intended supported checkout allocates 2% to licensing; current TEST quotes do not transfer money or grant access. No central content hosting, media proxy or licensor backup store is implemented.
 
-See [00.07.02 integration notes](docs/iterations/00.07.02.md) for the owner-authorized main merge, validation requirements and rollback. The earlier [00.07.01 validation repair](docs/iterations/00.07.01.md) retains CI prerequisites and regression coverage. Integration is not production approval.
+See [00.09.00 private-beta operations notes](docs/iterations/00.09.00.md) for deployment preflight, redacted diagnostics, validation and rollback. The earlier main integration remains source history. This increment is not production approval.
 
 ## Community and maintenance
 

@@ -53,6 +53,7 @@ jobs:
           python3 -B docs/roadmap/validate.py
           python3 -B -m unittest discover -s tests/roadmap -v
           python3 -B -m unittest discover -s tests/security -v
+          python3 -B -m unittest discover -s tests/repository -v
       - name: Media worker prerequisites
         run: bash scripts/ci_media_prerequisites.sh
       - name: Fresh locked installation
