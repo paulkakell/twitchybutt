@@ -62,4 +62,5 @@ Route::middleware(['auth', 'can:manage-content'])->prefix('studio')->group(funct
     Route::post('/posts', [PostController::class, 'store']);
     Route::put('/posts/{post}', [PostController::class, 'update'])->whereNumber('post');
     Route::get('/reports', fn () => view('reports', ['reports' => Report::query()->latest('id')->paginate(20)]));
+    Route::put('/reports/{report}', [ReportController::class, 'update'])->whereNumber('report')->middleware('strict:mfa');
 });

@@ -1,5 +1,14 @@
 # Change log
 
+## 00.08.00 - Operator report case lifecycle (unreleased)
+
+Classification: additive feature. Reference #9, roadmap TB-060. Adds creator-local report case states and guarded transitions for review, removal/rejection, appeal and closure. MFA-authorized administrators can record bounded operator notes; review/resolution timestamps and allowlisted structured transition logs provide an audit trail without copying report text into logs.
+
+Adds one reversible reports-table migration and feature regressions for authorization, state progression and invalid transitions. No dependency, payment, token, media, restricted-publication or public API enablement. Qualified jurisdiction/policy review, external deadlines/notifications, provider verification and the rest of M05 remain incomplete. Restricted publishing stays false-only.
+
+Validation requirement: full SQLite/PostgreSQL application suite, migrations forward/backward, Pint, PHPStan, Composer audit, repository/security/roadmap suites, fresh locked/no-dev builds, HTTP/concurrency/performance smoke, and current security checks on the exact candidate. Security findings above Low remain release-blocking. Rollback: stop writes, preserve reports, revert application code, then run the migration down only after exporting any new case metadata that must be retained.
+
+
 ## 00.07.02 - Main integration metadata (unreleased)
 
 Classification: fix and additive documentation. References #9, PR #10 and PR #16. The owner requested "Skip the reviews and merge into main". Prepare the cumulative development branch for that source integration without representing pending assessments as completed or approving production use.
