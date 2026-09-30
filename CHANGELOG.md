@@ -1,5 +1,13 @@
 # Change log
 
+## 00.09.00 - Turnkey private-beta operations foundation (unreleased)
+
+Classification: additive feature and documentation. Reference #9, M06/TB-065 through TB-074. Adds a fail-closed staging/production deployment preflight and an opt-in allowlisted support-diagnostics exporter. The preflight requires HTTPS, supported databases, debug-off operation and disabled unfinished payment/restricted-publishing capabilities without printing secret values. Diagnostics exclude keys, passwords, tokens, database/media/report contents and other non-allowlisted environment data.
+
+Adds repository regression coverage and includes repository tests in application validation. No Composer dependency, lockfile, schema, public API, route, queue, payment, settlement or restricted-publication behavior changes. Full M06 acceptance remains incomplete: supported-host approval, DNS/certificate automation, signed upgrades, encrypted scheduled backup/restore, beta onboarding evidence and measured load/cost validation are still required, as are prerequisite M04/M05 items.
+
+Rollback is code-only: revert the 00.09.00 changes and preserve existing configuration/data. Full SQLite/PostgreSQL, lint/type/static analysis, dependency audit, migrations, fresh/no-dev build, HTTP/concurrency checks and current security scans remain mandatory on the exact candidate. No unresolved security finding above Low may remain for release.
+
 ## 00.08.00 - Operator report case lifecycle (unreleased)
 
 Classification: additive feature. Reference #9, roadmap TB-060. Adds creator-local report case states and guarded transitions for review, removal/rejection, appeal and closure. MFA-authorized administrators can record bounded operator notes; review/resolution timestamps and allowlisted structured transition logs provide an audit trail without copying report text into logs.
