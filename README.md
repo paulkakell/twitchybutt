@@ -1,10 +1,10 @@
 # TwitchyButt CMS
 
-Application version **00.07.01**, on the `build/01.00.00` delivery track. **Unreleased development preview; release approval is blocked.** This increment adds creator-local private media. It does not enable real payments or public restricted-content operations.
+Application version **00.07.02**, prepared for integration into `main` from the `build/01.00.00` delivery track. **Unreleased development preview; release approval is blocked.** The development baseline includes account security and creator-local private media. It does not enable real payments or public restricted-content operations.
 
 Content-neutral creator software: each creator owns their application, domain, database, media, mail service and customer records. The intended supported checkout allocates 2% to licensing; current TEST quotes do not transfer money or grant access. No central content hosting, media proxy or licensor backup store is implemented.
 
-See [00.07.01 validation repair](docs/iterations/00.07.01.md) for explicit CI prerequisites and regression coverage. No release approval is implied by this patch.
+See [00.07.02 integration notes](docs/iterations/00.07.02.md) for the owner-authorized main merge, validation requirements and rollback. The earlier [00.07.01 validation repair](docs/iterations/00.07.01.md) retains CI prerequisites and regression coverage. Integration is not production approval.
 
 ## Community and maintenance
 
@@ -12,14 +12,14 @@ Use the [issue forms](https://github.com/paulkakell/twitchybutt/issues/new/choos
 
 [Repository administration](docs/REPOSITORY_ADMINISTRATION.md) documents sponsorship prerequisites, Dependabot version/security grouping, review rules and separately controlled GitHub security settings. Configuration does not imply release approval or successful activation of an administrator-only feature. Application CI has repository read permission; the separate main-only setup job can create missing labels and one welcome discussion, not write source or change administrator settings.
 
-Main contains the 00.03.00 development baseline and repository maintenance from PR #11. This branch retains the newer 00.07.01 candidate in draft PR #10; use the branch-specific preview command below. Neither integration nor a community announcement authorizes a production release. The editable roadmap and repository snapshot are not automatically synchronized.
+PR #10 carries the account, MFA, session and private-media development baseline into main under explicit owner authorization to merge without waiting for reviews. This supersedes the earlier instruction to keep the application off main, not the outstanding production-security or product-acceptance requirements. Check the PR merge state before using the main-branch preview command below. Neither integration nor a community announcement authorizes a production release. The editable roadmap and repository snapshot are not automatically synchronized.
 
 ## Run an isolated local preview
 
 Use 64-bit PHP 8.3+, Composer 2 and the locked extensions. SQLite requires pdo_sqlite; PostgreSQL additionally requires pdo_pgsql. Media opt-in requires GD with JPEG/PNG/WebP support and a PCNTL-enabled worker; optional video requires compatible FFmpeg/FFprobe. CI records the actual external tool versions rather than assuming they are Composer dependencies.
 
 ```sh
-git clone --branch build/01.00.00 https://github.com/paulkakell/twitchybutt.git
+git clone --branch main https://github.com/paulkakell/twitchybutt.git
 cd twitchybutt
 cp .env.example .env
 php scripts/prepare.php
@@ -83,6 +83,6 @@ CI repeats full tests on SQLite/PostgreSQL, fresh locked and no-dev installs, mi
 
 **Every unresolved security finding above Low blocks release.** Unknown severity, missing/failed/stale/wrong-candidate evidence and incomplete mandatory reviews also block; accepted/deferred is not fixed. The release gate defaults to denial and development mode never approves release. Independent security, secret-history, deployment-image and complete milestone evidence remain missing. Repository protections and externally controlled signed approvals are unfinished; CLI/CI is not an administrator-proof permission barrier.
 
-Apply migrations before new code, preserve current credentials/APP_KEY and keep matching private files/database for rollback. Media-schema rollback does not remove files and must not reset quota over retained storage. Prefer a forward fix, not reopening pre-MFA code. No main merge, tag, deployment or real funds transfer is authorized here.
+Apply migrations before new code, preserve current credentials/APP_KEY and keep matching private files/database for rollback. Media-schema rollback does not remove files and must not reset quota over retained storage. Prefer a forward fix, not reopening pre-MFA code. The owner authorized the main-branch integration without waiting for reviews. No production tag, deployment or real funds transfer is authorized by that integration.
 
 Copyright remains with the project owner. Public repository visibility is not an open-source or commercial-use license. Third-party packages retain their own licenses; inspect them with composer licenses.
