@@ -273,4 +273,31 @@ class CmsTest extends TestCase
         $this->post('/studio/posts', $this->postData(['classification' => 'anything']))->assertSessionHasErrors('classification');
         $this->assertDatabaseCount('posts', 0);
     }
+    public function test_admin_can_progress_report_case_with_audited_state(): void
+    {
+        $this->post('/report', ['reference' => '/posts/1', 'category' => 'consent', 'description' => 'Review this consent concern.'])->assertRedirect('/report');
+        $report = \App\Models\Report::query()->firstOrFail();
+        self::assertSame('open', $report->status);
+
+        $this->actingAsMfa($this->makeUser(true))
+            ->put('/studio/reports/'.$report->id, ['status' => 'reviewing', 'operator_note' => 'Checking creator-local records.'])
+            ->assertRedirect('/studio/reports');
+        self::assertSame('reviewing', $report->fresh()->status);
+        self::assertNotNull($report->fresh()->reviewed_at);
+
+        $this->put('/studio/reports/'.$report->id, ['status' => 'removed', 'operator_note' => 'Removed pending any appeal.'])
+            ->assertRedirect('/studio/reports');
+        self::assertSame('removed', $report->fresh()->status);
+        self::assertNotNull($report->fresh()->resolved_at);
+    }
+
+    public function test_report_case_rejects_invalid_transition_and_member_access(): void
+    {
+        $this->post('/report', ['reference' => '/posts/1', 'category' => 'safety', 'description' => 'Review this safety concern.'])->assertRedirect('/report');
+        $report = \App\Models\Report::query()->firstOrFail();
+
+        $this->actingAs($this->makeUser())->put('/studio/reports/'.$report->id, ['status' => 'reviewing'])->assertForbidden();
+        $this->actingAsMfa($this->makeUser(true))->put('/studio/reports/'.$report->id, ['status' => 'removed'])->assertStatus(422);
+        self::assertSame('open', $report->fresh()->status);
+    }
 }
