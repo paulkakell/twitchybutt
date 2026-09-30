@@ -1,6 +1,6 @@
 # TwitchyButt CMS
 
-Application version **00.07.02**, prepared for integration into `main` from the `build/01.00.00` delivery track. **Unreleased development preview; release approval is blocked.** The development baseline includes account security and creator-local private media. It does not enable real payments or public restricted-content operations.
+Application version **00.08.00**, continuing the 01.00.00 delivery track on `main`. **Unreleased development preview; release approval is blocked.** The development baseline includes account security and creator-local private media. It does not enable real payments or public restricted-content operations.
 
 Content-neutral creator software: each creator owns their application, domain, database, media, mail service and customer records. The intended supported checkout allocates 2% to licensing; current TEST quotes do not transfer money or grant access. No central content hosting, media proxy or licensor backup store is implemented.
 
@@ -47,7 +47,7 @@ Do not overwrite an existing APP_KEY. The administrator command prompts privatel
 
 **Invoice previews:** 20 TEST produces 20.000000 gross, 0.400000 licensing and 19.600000 creator share. Amounts are bounded integer snapshots with buyer-scoped idempotency. Browser totals and settlement fields are ignored; only the buyer can read a quote. Network fees, taxes and refunds are not implemented by this arithmetic.
 
-**Reporting:** /report accepts throttled plain-text reports without an account. MFA-authorized administrators inspect /studio/reports. Complete case/removal deadlines, attachments and provider workflows remain open.
+**Reporting:** /report accepts throttled plain-text reports without an account. MFA-authorized administrators inspect /studio/reports and progress creator-local cases through guarded review, removal/rejection, appeal and closure states. External deadlines, attachments, provider workflows and qualified policy review remain open.
 
 **Operations:** cms:doctor checks configuration/database without secrets. cms:media-status reports local asset counts, reservations and stalled work. Known-event logs redact arbitrary content and credentials; startup failures do not expose debug details. Infrastructure logging and alerting remain separate responsibilities.
 
