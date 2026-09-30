@@ -2,13 +2,16 @@
 
 namespace App\Providers;
 
+use App\Http\Middleware\RequireMfa;
 use App\Models\Post;
 use App\Models\User;
 use App\Policies\PostPolicy;
-use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Http\Request;
+use App\Services\AccountSecurityService;
+use App\Services\MediaProcessor;
+use App\Services\SessionRegistry;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use LogicException;
 
@@ -20,24 +23,22 @@ class AppServiceProvider extends ServiceProvider
             throw new LogicException('Exact amount calculations require 64-bit PHP.');
         }
         if (config('cms.payments_enabled') || config('cms.restricted_publishing_enabled')) {
-            throw new LogicException('Payment and restricted-publication adapters are not implemented in 00.03.00.');
+            throw new LogicException('Payment and restricted-publication adapters are not implemented in this preview.');
         }
         if ($this->app->environment('production') && (config('app.debug') || ! config('session.secure') || config('session.driver') === 'array' || config('cache.default') === 'array')) {
             throw new LogicException('Production requires debug off, secure cookies and persistent sessions/rate limits.');
         }
-        Gate::define('manage-content', fn (User $user): bool => $user->is_admin);
-        Gate::policy(Post::class, PostPolicy::class);
-        RateLimiter::for('login', function (Request $request): array {
-            $input = $request->input('email');
-            $email = is_string($input) ? strtolower($input) : 'invalid-input';
-
-            return [
-                Limit::perMinute(5)->by('account:'.hash('sha256', $email)),
-                Limit::perMinute(20)->by('ip:'.hash('sha256', (string) $request->ip())),
-            ];
+        AccountSecurityService::validateConfiguration();
+        SessionRegistry::validateConfiguration();
+        MediaProcessor::validateConfiguration();
+        Event::listen(Login::class, function (Login $event): void {
+            $request = request();
+            if ($event->guard === 'web' && $event->user instanceof User && $request->hasSession()) {
+                // Stamp the authenticated snapshot, not a newer DB version after a concurrent reset.
+                app(SessionRegistry::class)->start($request->session(), $event->user);
+            }
         });
-        RateLimiter::for('signup', fn (Request $request): Limit => Limit::perHour(10)->by((string) $request->ip()));
-        RateLimiter::for('reports', fn (Request $request): Limit => Limit::perMinute(3)->by((string) $request->ip()));
-        RateLimiter::for('invoices', fn (Request $request): Limit => Limit::perMinute(10)->by((string) $request->user()?->getAuthIdentifier()));
+        Gate::define('manage-content', fn (User $user): bool => $user->is_admin === true && RequireMfa::satisfied(request(), $user));
+        Gate::policy(Post::class, PostPolicy::class);
     }
 }

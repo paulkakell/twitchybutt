@@ -1,43 +1,45 @@
-# Architecture: 00.03.00
+# Architecture: 00.07.00
 
-Status: development foundation. Tracking issue #1. Single creator business per installation; not a multi-tenant central platform.
+Unreleased increment on the 01.00.00 delivery track, issue #9. One creator business per installation. The integration branch name is a goal, not release approval. Earlier architecture and implementation records remain in Git history and versioned iteration documents.
 
 ```text
-Browser -> creator-owned Laravel app -> creator-owned SQL database
-                     |                       |
-                     +-> private sessions    +-> users / posts / quotes / entitlements / reports
-                     +-> redacted JSON logs
-
-Future: creator app -> independently verified payment integration -> split contract
-        creator wallet receives creator allocation; licensor wallet receives agreed 2%
-        No blockchain integration or central licensing service runs in this release.
+Browser -> origin/security headers -> current session registry/generation
+        -> MFA boundary -> route authorization -> creator-owned SQL database
+           |-> classified posts / immutable TEST quotes / entitlements / reports
+           |-> encrypted MFA keys / hashed recovery codes / HMAC attempt budgets
+           |-> private media metadata / atomic storage reservation ledger
+Creator account-mail worker -> encrypted jobs -> creator SMTP service
+Creator media worker -> private quarantine -> GD/FFmpeg -> private derivatives
+Authorized browser -> expiring media route -> current post/access check -> derivative
+Exact commit -> SQLite/PostgreSQL tests + scoped scans -> evidence -> release gate
 ```
 
-Laravel 13 and Blade provide authentication primitives, CSRF, routing, validation, templates and migrations without a JavaScript build dependency. SQLite is the local preview default; PostgreSQL is an independently tested alternative. All application state remains in the creator installation. No content, previews, complaints or personal records are sent to the licensor.
+Laravel 13 and Blade provide sessions, CSRF, routing, validation and escaped templates. SQLite and PostgreSQL are the tested database paths. No content, previews, reports, identity documents or credentials are transferred to the licensor. The creator's SMTP provider receives recipient addresses and account links under the creator's contract. There is no blockchain execution, central licensing API or stored fan balance in this version.
 
-## Trust boundaries
+## Accounts and authorization
 
-The browser cannot choose roles, invoice totals, fee rates, settlement status or entitlements. Administrator-only routes require server-side authorization. Paid post bodies are rendered only after access policy checks. The catalogue selects summary fields and excludes restricted/unclassified/draft posts. Classification always takes precedence over entitlement and price for members.
+Administrator authority requires an explicit role and current MFA completion. Enrolled members must also complete MFA before authenticated content access. Password-only enrolled sessions can use only the allowed challenge/logout/recovery routes. Classification is checked before member entitlements, and administrator private-post access uses the same MFA-aware gate as the studio.
 
-The `InvoiceService` locks the buyer and post during creation, snapshots integer totals, and uses a unique buyer/key constraint. Invoice model mutations are forbidden; this is application-level protection, not a tamper-resistant ledger against a database owner or direct query-builder writes. Invoice status is permanently quote-only here. There is no callback that can mark settlement or grant access. Existing entitlement fixtures work without contacting a licensor service.
+The session registry stores management UUIDs, account/generation IDs and UTC timestamps, not bearer cookies, IP addresses or fingerprints. Requests reject revoked, expired, missing or cross-account registry references. Login stamps the authenticated snapshot rather than adopting a newer generation after a concurrent reset. MFA confirmation checks the expected generation before starting a replacement session. Already-running responses cannot be recalled.
 
-## Amount contract
+TOTP uses RFC 6238 SHA-1, six digits and 30-second steps with adjacent-step tolerance. Keys are encrypted under APP_KEY; a monotonic consumed counter prevents reuse. Ten recovery codes each contain 128 random bits and are stored as hashes. Factor replacement requires password confirmation and MFA completed within five minutes; pending material is generation-bound. The old factor remains active until replacement confirmation, which invalidates previous recovery codes and other sessions. Password recovery preserves MFA.
 
-Six decimal places are a local TEST convention, not a selected production token. Parse decimal strings, reject exponent/negative/overprecision/ambiguous forms, cap prices at 1,000,000 TEST. Zero means a free post; minimum paid price is 0.000050 TEST. For positive integer gross G: fee = floor(G * 200 / 10000); creator = G - fee. Display all six places. Amounts and multiplication stay within 64-bit limits. Final tax base, gas payer, refunds and production token precision remain design decisions.
+Critical writes consume ordered transactional SQL attempt budgets. HMAC identifiers avoid raw email/IP storage but remain pseudonymous security data. IP-first checks bound account-key row allocation, and downstream refusal still consumes the earlier IP budget. Transactions retry only after rollback, at most five times. This is not network denial-of-service protection.
 
-## Routes (HTML, session and CSRF protected writes)
+## Private media
 
-GET `/`: paginated public catalogue. GET `/posts/{id}`: authorized body or paywall; inaccessible classified/draft posts return 404. GET/POST `/register` and `/login`: member account forms. POST `/logout`: session termination. GET `/account`: buyer-only quote history. POST `/posts/{id}/invoices`: quote with UUID `idempotency_key`; duplicate purchase reuses snapshot and cross-post reuse returns 409. GET `/invoices/{uuid}`: owner-only quote; other users receive 404. POST `/checkout`: always 503. No success or blockchain callback endpoint exists.
+MFA-authorized administrators attach supported images or optional MP4 files to posts. Source files enter creator-local private quarantine, outside public/. Generated UUID directories and fixed filenames reject traversal and symlinks. A singleton SQL ledger conditionally reserves input plus maximum derivative capacity before filesystem writes; it serializes competing uploads without a SQLite read-to-write lock upgrade.
 
-GET `/studio`, GET `/studio/posts/new`, GET `/studio/posts/{id}/edit`, POST `/studio/posts`, PUT `/studio/posts/{id}`: administrator publishing. GET/POST `/report`: public text reporting. GET `/studio/reports`: administrator-only inbox. GET `/up`: process liveness, not database/payment readiness.
+A separate queue claims each asset with a processing token. GD reencodes bounded images to JPEG and thumbnails; FFmpeg creates one H.264/AAC MP4 rendition and a JPEG poster. Native video subprocesses do not inherit application credentials. Sources are never delivered and are removed after successful conversion. Native-decoder OS/container isolation remains a release requirement, not an implemented property of this queue.
 
-## Compatibility
+Only ready derivatives appear in authorized post HTML. Five-minute relative signed URLs are bound to the post and public/user-generation subject; every request rechecks current classification and entitlement. Revoking access, unpublishing, or deleting blocks subsequent delivery even before signature expiry. Range requests use BinaryFileResponse, correct MIME and private/no-store headers. There is no generic public filesystem serving route.
 
-This is the first schema and route set. The project version uses two digits per component, not an unqualified claim of strict SemVer syntax. Next additive scope is 00.04.00; a released 00.03.00 correction would be 00.03.01. Work in this not-yet-released milestone remains traceable to exact commits on build/00.03.00.
+Deletion first marks the asset unavailable, then removes local files, then releases its reservation. Failed cleanup remains unavailable and keeps capacity reserved. Processing/uploading states cannot be deleted concurrently. Recovery of abandoned operations, cloud storage, resumable uploads, isolated inspection, adaptive streaming, captions and watermarks remain incomplete. External downloads and backups cannot be recalled by local deletion.
 
-## Sources
+## Amounts, logs and release
 
-Official framework release/runtime requirements: https://laravel.com/docs/13.x/releases
-Authentication/session guidance: https://laravel.com/docs/13.x/authentication
-GitHub token-trigger behavior: https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow
-Reviewed 2026-09-26 America/Denver. These are implementation references, not legal clearance.
+TEST quotes retain six decimal places and bounded 64-bit integers. The licensing share is floor(gross*200/10000), and creator share is gross minus fee. A 20 TEST quote allocates 0.400000 and 19.600000; it neither transfers funds nor grants access. Production asset selection, settlement, taxes and refunds remain separate requirements.
+
+Known-event JSON logs retain only approved identifiers. Early bootstrap failures return a fixed 503 and constant diagnostic event rather than exception details. Infrastructure logs, SMTP records, native-parser isolation and operational alerting need separate assessment.
+
+See iterations/00.07.00.md for settings/routes/examples, SECURITY.md for assessment limits and ONE_ZERO_ACCEPTANCE.md for remaining product work. Tests and scoped scans are not release approval. No unresolved above-Low or unknown finding, incomplete required review, or missing/current-candidate evidence may pass the release gate.

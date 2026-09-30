@@ -1,0 +1,45 @@
+# Recover the exact development source and locked tools for local validation.
+# This development archive is not a production release artifact.
+name: Development workspace
+on:
+  push:
+    branches: ['build/01.00.00']
+    paths: ['.github/workflows/workspace.yml']
+permissions:
+  contents: read
+jobs:
+  workspace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Provision explicit development prerequisites
+        run: bash scripts/ci_media_prerequisites.sh
+      - name: Assemble tracked source and locked development tools
+        run: |
+          set -eu
+          composer validate --strict
+          composer install --no-interaction --prefer-dist --no-scripts
+          composer audit --locked
+          mkdir -p /tmp/cms-workspace/runtime/bin /tmp/cms-workspace/runtime/lib /tmp/cms-workspace/runtime/extensions
+          git archive HEAD | tar -x -C /tmp/cms-workspace
+          git bundle create /tmp/cms-workspace/source.bundle --all
+          cp -a vendor /tmp/cms-workspace/vendor
+          cp "$(command -v composer)" /tmp/cms-workspace/composer.phar
+          cp /usr/bin/php8.3 /tmp/cms-workspace/runtime/bin/php
+          cp /usr/lib/php/20230831/*.so /tmp/cms-workspace/runtime/extensions/
+          ldd /usr/bin/php8.3 /usr/lib/php/20230831/*.so | awk '/=> \/.* \(/ {print $3}' | sort -u | while read -r library; do
+            case "$(basename "$library")" in libc.so*|libm.so*|libpthread.so*|librt.so*|libdl.so*|ld-linux*) continue ;; esac
+            cp -L "$library" /tmp/cms-workspace/runtime/lib/
+          done
+          git rev-parse HEAD > /tmp/cms-workspace/WORKSPACE_COMMIT
+          tar -czf /tmp/cms-workspace.tar.gz -C /tmp/cms-workspace .
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: development-workspace-${{ github.sha }}
+          path: /tmp/cms-workspace.tar.gz
+          retention-days: 3
+          if-no-files-found: error

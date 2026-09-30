@@ -1,7 +1,7 @@
 name: Application validation
 on:
   push:
-    branches: ["main", "build/00.03.00", "docs/roadmap-00.03.01"]
+    branches: ["main", "build/**", "docs/roadmap-00.03.01"]
   pull_request:
   workflow_dispatch:
 permissions:
@@ -45,11 +45,16 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - name: Roadmap schema and regression checks
+      - name: Roadmap and release-policy regression checks
         run: |
           set -eu
+          mkdir -p build
+          git rev-parse HEAD > build/tested-commit.txt
           python3 -B docs/roadmap/validate.py
           python3 -B -m unittest discover -s tests/roadmap -v
+          python3 -B -m unittest discover -s tests/security -v
+      - name: Media worker prerequisites
+        run: bash scripts/ci_media_prerequisites.sh
       - name: Fresh locked installation
         run: |
           set -eu
@@ -66,8 +71,9 @@ jobs:
       - name: Dependency vulnerability audit and license inventory
         run: |
           set -eu
-          composer audit --locked --no-interaction
+          composer audit --locked --no-interaction --format=json > build/audit.json
           composer licenses --format=json > build/dependency-licenses.json
+          composer show --locked --format=json > build/dependency-inventory.json
       - name: PHP syntax, style, type analysis and targeted source checks
         run: |
           set -eu
@@ -97,10 +103,20 @@ jobs:
       - name: Real HTTP session and CSRF smoke test
         run: |
           set -eu
-          APP_ENV=local php artisan serve --host=127.0.0.1 --port=8765 > build/server.log 2>&1 &
+          APP_ENV=local php artisan serve --no-reload --host=127.0.0.1 --port=8765 > build/server.log 2>&1 &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           python3 scripts/http_smoke.py
+      - name: Account HTTP, loopback SMTP and concurrent recovery
+        run: python3 -B scripts/account_http_smoke.py
+      - name: MFA, session and concurrent single-use checks
+        run: python3 -B scripts/mfa_http_smoke.py
+      - name: Concurrent database attempt budgets
+        run: python3 -B scripts/attempt_budget_smoke.py
+      - name: Private media HTTP and real worker checks
+        run: python3 -B scripts/media_http_smoke.py
+      - name: Concurrent media quota reservations
+        run: python3 -B scripts/media_quota_smoke.py
       - name: Validate locked production dependency install
         run: |
           set -eu
@@ -109,3 +125,76 @@ jobs:
           composer check-platform-reqs --no-dev
           php artisan cms:doctor
           git diff --exit-code
+      - name: Retain test evidence without application logs
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: validation-${{ matrix.database }}-${{ github.sha }}
+          path: |
+            build/tested-commit.txt
+            build/junit.xml
+            build/audit.json
+            build/dependency-licenses.json
+            build/dependency-inventory.json
+            build/account-http.json
+            build/mfa-http.json
+            build/attempt-budget.json
+            build/media-http.json
+            build/media-quota.json
+            build/media-tools.txt
+            build/media-packages.txt
+          retention-days: 30
+          if-no-files-found: error
+  security:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Scan locked dependencies
+        run: |
+          set -eu
+          mkdir -p build
+          composer --version --no-ansi > build/composer-version.txt
+          composer audit --locked --no-interaction --format=json > build/audit.json
+      - name: SAST with pinned engine and local rules
+        run: |
+          set -eu
+          IMAGE=semgrep/semgrep:1.178.0@sha256:32e459968daabe7ab86968184a29109b9564aa00392401156f9788452b42786b
+          docker pull "$IMAGE"
+          printf '%s\n' "$IMAGE" > build/semgrep-image.txt
+          docker run --rm --network=none --read-only --tmpfs /tmp:rw,nosuid,nodev,size=1g -e HOME=/tmp -v "$PWD:/src:ro" -w /src "$IMAGE" semgrep scan --metrics=off --disable-version-check --disable-nosem --strict --jobs=2 --config security/semgrep.yml --json app bootstrap config database routes resources public > build/semgrep.json
+      - name: Normalize scanner evidence
+        if: always()
+        run: |
+          python3 -B scripts/security_evidence.py --commit "$(git rev-parse HEAD)" --version "$(cat VERSION)"
+          cat build/security-evidence.json
+      - name: Block unresolved above-Low findings
+        run: python3 -B scripts/security_gate.py --development --evidence build/security-evidence.json --commit "$(git rev-parse HEAD)" --version "$(cat VERSION)"
+      - name: Retain sanitized security evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: security-${{ github.sha }}
+          path: |
+            build/security-evidence.json
+            build/semgrep-image.txt
+            build/composer-version.txt
+          retention-days: 30
+          if-no-files-found: error
+  release-readiness:
+    needs: [validate, security]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: security-${{ github.sha }}
+          path: build
+          digest-mismatch: error
+      - name: Require complete current release approval
+        run: python3 -B scripts/security_gate.py --evidence build/security-evidence.json --commit "$(git rev-parse HEAD)" --version "$(cat VERSION)"

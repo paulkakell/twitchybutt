@@ -1,0 +1,42 @@
+rules:
+  - id: cms-no-dynamic-execution
+    languages: [php]
+    severity: ERROR
+    message: Dynamic code and shell execution require security review.
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: exec(...)
+      - pattern: shell_exec(...)
+      - pattern: system(...)
+      - pattern: passthru(...)
+  - id: cms-no-native-deserialization
+    languages: [php]
+    severity: ERROR
+    message: Do not deserialize PHP objects from application inputs.
+    pattern: unserialize(...)
+  - id: cms-no-request-mass-assignment
+    languages: [php]
+    severity: ERROR
+    message: Persist explicitly validated fields rather than the entire request.
+    pattern-either:
+      - pattern: $MODEL->fill($REQUEST->all())
+      - pattern: $MODEL->forceFill($REQUEST->all())
+      - pattern: $MODEL::create($REQUEST->all())
+      - pattern: $MODEL->update($REQUEST->all())
+  - id: cms-no-unescaped-blade
+    languages: [generic]
+    severity: WARNING
+    message: Raw Blade output requires an explicit sanitization design.
+    pattern-regex: '\{!![\s\S]*?!!\}'
+    paths:
+      include: ['*.blade.php']
+  - id: cms-no-private-key-material
+    languages: [generic]
+    severity: ERROR
+    message: Private key material must not be present in application source.
+    pattern-regex: '-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----'
+  - id: cms-no-tls-verification-bypass
+    languages: [php]
+    severity: ERROR
+    message: Do not disable TLS certificate verification.
+    pattern: $CLIENT->withoutVerifying(...)

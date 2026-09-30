@@ -1,0 +1,110 @@
+# Read-only inventory for remediation; never dismisses or updates an alert.
+# No checkout or repository code executes in the token-bearing job.
+name: Security inventory
+on:
+  push:
+    branches: ['build/01.00.00']
+    paths: ['.github/workflows/security-inventory.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inventory:
+    if: github.repository == 'paulkakell/twitchybutt' && github.ref == 'refs/heads/build/01.00.00'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      security-events: read
+    steps:
+      - name: Read sanitized alert and settings metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import datetime
+          import json
+          import os
+          import subprocess
+          from urllib.parse import urlencode
+          from pathlib import Path
+
+          repo = 'paulkakell/twitchybutt'
+          assert os.environ['GITHUB_REPOSITORY'] == repo
+          def get(path, paginate=False):
+              args = ['gh', 'api', '--method', 'GET', '-H', 'Accept: application/vnd.github+json', '-H', 'X-GitHub-Api-Version: 2022-11-28', path]
+              if paginate:
+                  args += ['--paginate', '--slurp']
+              result = subprocess.run(args, capture_output=True, text=True, timeout=90)
+              if result.returncode:
+                  return {'available': False, 'reason': 'API read failed; not evidence of zero alerts or an enabled setting'}
+              try:
+                  data = json.loads(result.stdout) if result.stdout.strip() else None
+                  if paginate:
+                      if not isinstance(data, list) or any(not isinstance(page, list) for page in data):
+                          raise ValueError('unexpected paginated shape')
+                      data = [item for page in data for item in page]
+                  return {'available': True, 'data': data}
+              except (ValueError, TypeError):
+                  return {'available': False, 'reason': 'Unexpected API response'}
+
+          report = {'generated_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'repository': repo, 'inspection_commit': os.environ['GITHUB_SHA'], 'alerts': {}}
+          for ref in (None, 'refs/heads/main', 'refs/heads/build/01.00.00', 'refs/pull/10/head'):
+              params = {'state': 'open', 'per_page': 100}
+              if ref:
+                  params['ref'] = ref
+              result = get(f'repos/{repo}/code-scanning/alerts?' + urlencode(params), True)
+              if result['available']:
+                  alerts = []
+                  for alert in result.pop('data'):
+                      rule = alert.get('rule') or {}
+                      instance = alert.get('most_recent_instance') or {}
+                      alerts.append({'number': alert['number'], 'state': alert['state'], 'url': alert.get('html_url'), 'rule_id': rule.get('id'), 'description': rule.get('description'), 'severity': rule.get('security_severity_level'), 'tool': (alert.get('tool') or {}).get('name'), 'ref': instance.get('ref'), 'commit_sha': instance.get('commit_sha'), 'location': instance.get('location'), 'message': (instance.get('message') or {}).get('text')})
+                  result.update(count=len(alerts), findings=alerts)
+              report['alerts'][ref or 'default'] = result
+          report['tracked_alerts'] = {}
+          for number in (1, 2):
+              result = get(f'repos/{repo}/code-scanning/alerts/{number}')
+              if result['available']:
+                  data = result['data']
+                  result['data'] = {key: data.get(key) for key in ('number', 'state', 'fixed_at', 'dismissed_at', 'dismissed_reason', 'html_url')}
+              report['tracked_alerts'][str(number)] = result
+          report['ref_heads'] = {}
+          for branch in ('main', 'build/01.00.00'):
+              result = get(f'repos/{repo}/git/ref/heads/{branch}')
+              if result['available']:
+                  result['data'] = {'sha': (result['data'].get('object') or {}).get('sha')}
+              report['ref_heads'][branch] = result
+          analyses = get(f'repos/{repo}/code-scanning/analyses?per_page=100', True)
+          if analyses['available']:
+              analyses['analyses'] = [{key: item.get(key) for key in ('id', 'ref', 'commit_sha', 'created_at', 'error', 'results_count', 'category', 'tool')} for item in analyses.pop('data')]
+          report['analyses'] = analyses
+          for setting in ('private-vulnerability-reporting', 'vulnerability-alerts', 'automated-security-fixes'):
+              report[setting] = get(f'repos/{repo}/{setting}')
+          metadata = get(f'repos/{repo}')
+          if metadata['available']:
+              metadata['data'] = {key: metadata['data'].get(key) for key in ('default_branch', 'security_and_analysis')}
+          report['repository_settings'] = metadata
+          query = 'query { user(login: "paulkakell") { hasSponsorsListing } repository(owner: "paulkakell", name: "twitchybutt") { fundingLinks { platform url } } }'
+          sponsors = subprocess.run(['gh', 'api', 'graphql', '-f', 'query=' + query], capture_output=True, text=True, timeout=45)
+          if sponsors.returncode == 0:
+              data = json.loads(sponsors.stdout)
+              report['sponsors'] = {'available': not bool(data.get('errors')), 'data': data.get('data')}
+          else:
+              report['sponsors'] = {'available': False}
+          Path('security-inventory.json').write_text(json.dumps(report, indent=2) + '\n')
+          # Detailed findings stay in the artifact, not in public workflow logs.
+          for ref, result in report['alerts'].items():
+              print(json.dumps({'ref': ref, 'available': result['available'], 'open_count': result.get('count')}))
+          for number, result in report['tracked_alerts'].items():
+              print(json.dumps({'alert_number': number, 'available': result['available'], 'state': (result.get('data') or {}).get('state')}))
+          if not report['alerts']['default']['available']:
+              raise SystemExit('Security inventory unavailable; fail closed')
+          PY
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        if: always()
+        with:
+          name: security-inventory-${{ github.sha }}
+          path: security-inventory.json
+          if-no-files-found: error
+          retention-days: 3

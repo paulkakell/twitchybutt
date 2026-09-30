@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use App\Rules\PasswordBytes;
+use App\Services\SecurityMaintenance;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -51,3 +52,31 @@ Artisan::command('cms:doctor', function (): int {
 
     return in_array(false, $checks, true) ? 1 : 0;
 })->purpose('Check configuration without printing secrets.');
+
+Artisan::command('cms:security-prune', function (): void {
+    $counts = app(SecurityMaintenance::class)->prune();
+    $this->info('Expired session records removed: '.$counts['sessions']);
+    $this->info('Expired pending factors cleared: '.$counts['pending_factors']);
+    $this->info('Expired attempt budgets removed: '.$counts['budgets']);
+})->purpose('Remove expired local security metadata without exposing identities or keys');
+
+Artisan::command('cms:media-status', function (): int {
+    $this->line('media_enabled: '.(config('media.enabled') ? 'yes' : 'no'));
+    $this->line('video_enabled: '.(config('media.video_enabled') ? 'yes' : 'no'));
+    try {
+        $reserved = (int) DB::table('media_storage')->where('id', 1)->value('reserved_bytes');
+        $this->line('reserved_bytes: '.$reserved);
+        $this->line('quota_bytes: '.(config('media.quota_mb') * 1048576));
+        foreach (['uploading', 'queued', 'processing', 'ready', 'failed', 'deleting'] as $state) {
+            $this->line($state.': '.DB::table('media_assets')->where('state', $state)->count());
+        }
+        $stalled = DB::table('media_assets')->whereIn('state', ['uploading', 'processing'])->where('updated_at', '<', now()->subMinutes(15))->count();
+        $this->line('stalled_operations: '.$stalled);
+
+        return $stalled > 0 ? 1 : 0;
+    } catch (Throwable) {
+        $this->error('Media status unavailable. Check migrations and database connectivity.');
+
+        return 1;
+    }
+})->purpose('Report local media state and quota without filenames, content or credentials.');

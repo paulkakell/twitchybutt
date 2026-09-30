@@ -1,22 +1,22 @@
 # TwitchyButt CMS
 
-Version **00.03.00**. Self-hosted, content-neutral creator software. **Development preview, not a production platform.**
+Application version **00.07.02**, prepared for integration into `main` from the `build/01.00.00` delivery track. **Unreleased development preview; release approval is blocked.** The development baseline includes account security and creator-local private media. It does not enable real payments or public restricted-content operations.
 
-## Product roadmap
+Content-neutral creator software: each creator owns their application, domain, database, media, mail service and customer records. The intended supported checkout allocates 2% to licensing; current TEST quotes do not transfer money or grant access. No central content hosting, media proxy or licensor backup store is implemented.
 
-[Read the full product roadmap](ROADMAP.md) or [add ideas in the editable Google Sheet](https://docs.google.com/spreadsheets/d/1bdbGDfaQMY68vkWfJhkeO3uBuDx-qHyqr8Vjjp1av_A/edit). Roadmap documentation revision **00.03.01** contains 100 items, ten proposed milestones, open decisions, acceptance criteria and release controls. Application VERSION is unchanged. Sheet edits do not automatically synchronize to GitHub.
+See [00.07.02 integration notes](docs/iterations/00.07.02.md) for the owner-authorized main merge, validation requirements and rollback. The earlier [00.07.01 validation repair](docs/iterations/00.07.01.md) retains CI prerequisites and regression coverage. Integration is not production approval.
 
 ## Community and maintenance
 
 Use the [issue forms](https://github.com/paulkakell/twitchybutt/issues/new/choose) for bugs, documentation corrections and scoped roadmap requests. Ask questions and explore ideas in [Discussions](https://github.com/paulkakell/twitchybutt/discussions). Read [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md) before sharing evidence; never post secrets, private media or vulnerability details publicly.
 
-[Repository administration](docs/REPOSITORY_ADMINISTRATION.md) documents sponsorship prerequisites, Dependabot version/security grouping, review rules and separately controlled GitHub security settings. Configuration does not imply release approval or successful activation of an administrator-only feature.
+[Repository administration](docs/REPOSITORY_ADMINISTRATION.md) documents sponsorship prerequisites, Dependabot version/security grouping, review rules and separately controlled GitHub security settings. Configuration does not imply release approval or successful activation of an administrator-only feature. Application CI has repository read permission; the separate main-only setup job can create missing labels and one welcome discussion, not write source or change administrator settings.
 
-Creators operate their own application and database. No central content hosting is implemented. The intended payment flow allocates a 2% licensing fee; this release only calculates **TEST invoice quotes**. No wallet is connected, no funds are accepted, and quotes never unlock paid content.
+PR #10 carries the account, MFA, session and private-media development baseline into main under explicit owner authorization to merge without waiting for reviews. This supersedes the earlier instruction to keep the application off main, not the outstanding production-security or product-acceptance requirements. Check the PR merge state before using the main-branch preview command below. Neither integration nor a community announcement authorizes a production release. The editable roadmap and repository snapshot are not automatically synchronized.
 
-## Run a local preview
+## Run an isolated local preview
 
-Use an isolated development machine with 64-bit PHP 8.3+, Composer 2, PDO SQLite, mbstring, XML/DOM, ctype, fileinfo and OpenSSL. PostgreSQL also requires pdo_pgsql. Composer checks the locked package requirements.
+Use 64-bit PHP 8.3+, Composer 2 and the locked extensions. SQLite requires pdo_sqlite; PostgreSQL additionally requires pdo_pgsql. Media opt-in requires GD with JPEG/PNG/WebP support and a PCNTL-enabled worker; optional video requires compatible FFmpeg/FFprobe. CI records the actual external tool versions rather than assuming they are Composer dependencies.
 
 ```sh
 git clone --branch main https://github.com/paulkakell/twitchybutt.git
@@ -31,45 +31,58 @@ php artisan cms:doctor
 php artisan serve --host=127.0.0.1 --port=8000
 ```
 
-Administrator provisioning prompts for a password and confirmation. No default administrator or password exists. Existing members are not silently promoted. Passwords require at least 12 characters with letters and numbers and at most 72 UTF-8 bytes; null bytes are rejected. Keep `.env`, the database, sessions and logs private. The development server is not a public deployment solution. Only `public/` may be a web document root.
+Do not overwrite an existing APP_KEY. The administrator command prompts privately for a password and refuses to promote an existing member. The creator must enroll MFA before using the studio. Only public/ may be the web document root; the development server is not production hosting. Keep database, configuration, keys, sessions and logs private.
 
-## Implemented features and examples
+## Implemented examples
 
-**Accounts:** register at `/register`, sign in at `/login`, and sign out with the form. Members cannot access `/studio`. Email verification, password recovery and MFA are not implemented.
+**Accounts:** members register/sign in, verify an email, recover a password and manage sessions. Account email defaults off until creator SMTP and the encrypted database mail queue are configured. Signed verification links last 60 minutes; hashed single-use reset tokens last 30 minutes. Recovery requires fresh login, revokes existing sessions on their next request and preserves MFA. Verification is not proof of adulthood, identity or performer consent.
 
-**Publishing:** visit `/studio/posts/new`, enter plain text, choose `general` and `published`, and use price `0` for open access. Drafts stay private. Edit and unpublish posts through the studio. HTML is escaped; media uploads are not included.
+**MFA:** open /account/mfa, confirm the current password, enroll an authenticator and save the ten recovery codes offline. Administrators require MFA; members can opt in. TOTP and recovery proofs are single-use across competing requests. Replacement requires current password plus recently completed MFA and keeps the old factor until confirmation. There is no public email-only MFA-disable shortcut. Lost-all-factor operations still need review.
 
-**Classification:** `general`, `restricted`, or `unclassified`. Restricted and unclassified posts can be saved as private drafts but cannot be published, including through forged requests. These labels are not legal exemptions.
+**Sessions:** /account/sessions lists owner-scoped management references and timestamps. Confirm a password to revoke one or all sessions. Default idle/absolute limits are 30/720 minutes, bounded in configuration. Existing pre-registry sessions must sign in again. A response already being delivered cannot be recalled.
 
-**Paid access:** price `20` creates a locked general post. Reading requires a valid, unexpired, unrevoked entitlement. No HTTP endpoint grants entitlements in this release; test fixtures are not payment evidence. Existing valid access does not depend on a licensing service.
+**Publishing:** create a post in /studio, choose general/published and price 0 for a public post. Text is escaped, not executed as HTML. Restricted/unclassified content remains private drafts. A general post priced 20 is locked without current entitlement. No route grants entitlements by pretending a payment succeeded.
 
-**Invoice previews:** signed-in members can request a quote for a published general paid post. For 20 TEST, the server records 20.000000 total, 0.400000 fee, and 19.600000 creator allocation. Browser-supplied prices, fees and payment status are ignored. Duplicate buyer/idempotency keys return the original snapshot; reuse for another post returns 409. Quotes are visible only to their buyer and do not initiate payments.
+**Private media:** save a post, then choose Manage private media. With media enabled, upload JPEG/PNG/WebP or separately enabled MP4, add alternative text and set display order. Sources are quarantined privately; workers generate bounded derivatives. Only ready media appears to authorized readers. Image maximum 8 MiB/20 million pixels; MP4 maximum 64 MiB/10 minutes. Relative signed links last 5 minutes and always recheck current access. Revocation/deletion blocks subsequent requests; the studio removes local files and releases quota only after cleanup. Cloud storage, resumable upload, adaptive streaming, isolated native decoders and caption support remain open.
 
-**Reports:** `/report` accepts text reports without an account; administrators read them at `/studio/reports`. No attachments, emergency response, notifications or complete statutory case workflow are implemented.
+**Invoice previews:** 20 TEST produces 20.000000 gross, 0.400000 licensing and 19.600000 creator share. Amounts are bounded integer snapshots with buyer-scoped idempotency. Browser totals and settlement fields are ignored; only the buyer can read a quote. Network fees, taxes and refunds are not implemented by this arithmetic.
 
-**Diagnostics:** `/up` is liveness only. `php artisan cms:doctor` checks configuration and database connectivity without printing secrets. Structured JSON logs retain event names and IDs rather than post bodies or credentials.
+**Reporting:** /report accepts throttled plain-text reports without an account. MFA-authorized administrators inspect /studio/reports. Complete case/removal deadlines, attachments and provider workflows remain open.
 
-## Configuration and validation
+**Operations:** cms:doctor checks configuration/database without secrets. cms:media-status reports local asset counts, reservations and stalled work. Known-event logs redact arbitrary content and credentials; startup failures do not expose debug details. Infrastructure logging and alerting remain separate responsibilities.
 
-See `.env.example` and `docs/OPERATIONS.md` for every exposed setting and examples. Both `CMS_PAYMENTS_ENABLED` and `CMS_RESTRICTED_PUBLISHING_ENABLED` are false-only reserved flags: setting either true prevents startup. Production mode rejects debugging, insecure cookies and ephemeral session/cache stores; this does not certify production readiness.
+## Configuration, workers and testing
+
+[Operator settings](docs/OPERATIONS.md) and [00.07.00 examples/rollback](docs/iterations/00.07.00.md) cover every new option. Account/MFA details remain in their versioned documents. Media, video, real payments and restricted publication default off. Payment/restricted flags are false-only in this preview.
 
 ```sh
+# Creator account-mail worker, after explicit SMTP opt-in:
+php artisan queue:work database --queue=account-mail --sleep=1 --tries=3 --timeout=30
+# Separate media worker, after explicit media opt-in:
+php -d memory_limit=512M artisan queue:work media --queue=media --sleep=1 --tries=1 --timeout=240 --memory=512
+# Daily security pruning; hourly expired-reset cleanup:
+php artisan cms:security-prune
+php artisan auth:clear-resets
+# Disposable databases only:
 composer validate --strict
 composer audit --locked
 vendor/bin/pint --test
 vendor/bin/phpstan analyse --memory-limit=1G
 vendor/bin/phpunit
 python3 scripts/security_scan.py
+python3 -B docs/roadmap/validate.py
+python3 -B -m unittest discover -s tests/security -v
+python3 -B -m unittest discover -s tests/roadmap -v
 ```
 
-Run tests only against disposable databases. CI checks fresh SQLite/PostgreSQL installations, dependency advisories, syntax/style/types, source guardrails, migrations forward/backward, unit/integration/regression behavior, cached builds, real HTTP/CSRF behavior and small performance budgets. Test configuration isolates cache/session state from runner variables.
+CI repeats full tests on SQLite/PostgreSQL, fresh locked and no-dev installs, migrations, cached builds, scoped scans and actual loopback HTTP/SMTP/media/concurrency checks. Retained artifacts identify the exact tested commit and omit application logs, mail bodies and credentials. A queued, skipped or planned test is not a pass. Native worker isolation, production tool-image assessment, real-provider delivery and browser/accessibility testing require additional evidence.
 
-The one-time dependency-lock generation jobs have been removed. Application validation has repository read permission only and installs from composer.lock. The separate community setup job can create labels/discussions on main but cannot write application code or change administrator-only settings. Failed runs and corrections are documented in `docs/VALIDATION_HISTORY.md`; a planned check is not a pass. Actual final results are in the pull request and the Drive build report.
+## Roadmap and release rule
 
-## Remaining release gates
+[Editable roadmap](https://docs.google.com/spreadsheets/d/1bdbGDfaQMY68vkWfJhkeO3uBuDx-qHyqr8Vjjp1av_A/edit), [dated baseline](ROADMAP.md), [1.0 acceptance](docs/ONE_ZERO_ACCEPTANCE.md), [architecture](docs/ARCHITECTURE.md), [security review](docs/SECURITY.md), [change log](CHANGELOG.md).
 
-No real or testnet transfers, split contract, production token/network, treasury address, subscriptions/automatic renewals, refunds/taxes, media pipeline, performer/viewer verification, statutory case automation, email/reset/MFA, turnkey deployment/upgrades/backups or final commercial license is implemented or approved on this main baseline. Do not accept customer funds or publish restricted content with this preview.
+**Every unresolved security finding above Low blocks release.** Unknown severity, missing/failed/stale/wrong-candidate evidence and incomplete mandatory reviews also block; accepted/deferred is not fixed. The release gate defaults to denial and development mode never approves release. Independent security, secret-history, deployment-image and complete milestone evidence remain missing. Repository protections and externally controlled signed approvals are unfinished; CLI/CI is not an administrator-proof permission barrier.
 
-See `CHANGELOG.md`, `docs/ARCHITECTURE.md`, `docs/OPERATIONS.md`, `docs/SECURITY.md`, and `docs/RELEASE_00.03.00.md`. Foundation and roadmap work have been integrated into main. The newer application candidate remains in draft PR #10, tracked by #9; its unmerged features and release evidence must not be attributed to this main baseline. No release tag has been created.
+Apply migrations before new code, preserve current credentials/APP_KEY and keep matching private files/database for rollback. Media-schema rollback does not remove files and must not reset quota over retained storage. Prefer a forward fix, not reopening pre-MFA code. The owner authorized the main-branch integration without waiting for reviews. No production tag, deployment or real funds transfer is authorized by that integration.
 
-Copyright remains with the project owner. Public visibility does not grant an open-source or commercial-use license. Third-party packages retain their own licenses; use `composer licenses` to inventory them.
+Copyright remains with the project owner. Public repository visibility is not an open-source or commercial-use license. Third-party packages retain their own licenses; inspect them with composer licenses.

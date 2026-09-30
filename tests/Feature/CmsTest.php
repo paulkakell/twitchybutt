@@ -86,7 +86,7 @@ class CmsTest extends TestCase
 
     public function test_admin_can_create_edit_and_unpublish_a_post(): void
     {
-        $this->actingAs($this->makeUser(true))->post('/studio/posts', $this->postData())->assertRedirect('/studio');
+        $this->actingAsMfa($this->makeUser(true))->post('/studio/posts', $this->postData())->assertRedirect('/studio');
         $post = Post::query()->firstOrFail();
         $this->get('/studio/posts/'.$post->id.'/edit')->assertOk();
         $this->put('/studio/posts/'.$post->id, $this->postData(['title' => 'Revised', 'status' => 'draft']))->assertRedirect('/studio');
@@ -96,7 +96,7 @@ class CmsTest extends TestCase
 
     public function test_restricted_and_unclassified_publication_is_rejected(): void
     {
-        $this->actingAs($this->makeUser(true));
+        $this->actingAsMfa($this->makeUser(true));
         foreach (['restricted', 'unclassified'] as $classification) {
             $this->post('/studio/posts', $this->postData(['classification' => $classification]))->assertSessionHasErrors('classification');
         }
@@ -105,7 +105,7 @@ class CmsTest extends TestCase
 
     public function test_restricted_draft_is_saved_but_not_public(): void
     {
-        $this->actingAs($this->makeUser(true))->post('/studio/posts', $this->postData(['classification' => 'restricted', 'status' => 'draft']))->assertRedirect('/studio');
+        $this->actingAsMfa($this->makeUser(true))->post('/studio/posts', $this->postData(['classification' => 'restricted', 'status' => 'draft']))->assertRedirect('/studio');
         $post = Post::query()->firstOrFail();
         $this->get('/posts/'.$post->id)->assertOk()->assertSee('A plain text article.');
         $this->post('/logout');
@@ -241,7 +241,7 @@ class CmsTest extends TestCase
         $this->assertDatabaseCount('reports', 1);
         $this->get('/')->assertDontSee('PRIVATE_REPORT_MARKER');
         $this->actingAs($this->makeUser())->get('/studio/reports')->assertForbidden();
-        $this->actingAs($this->makeUser(true))->get('/studio/reports')->assertSee('PRIVATE_REPORT_MARKER');
+        $this->actingAsMfa($this->makeUser(true))->get('/studio/reports')->assertSee('PRIVATE_REPORT_MARKER');
     }
 
     public function test_report_rate_limit_and_validation(): void
@@ -269,7 +269,7 @@ class CmsTest extends TestCase
 
     public function test_invalid_decimal_and_bad_classification_are_rejected(): void
     {
-        $this->actingAs($this->makeUser(true))->post('/studio/posts', $this->postData(['price' => '1e6']))->assertSessionHasErrors('price');
+        $this->actingAsMfa($this->makeUser(true))->post('/studio/posts', $this->postData(['price' => '1e6']))->assertSessionHasErrors('price');
         $this->post('/studio/posts', $this->postData(['classification' => 'anything']))->assertSessionHasErrors('classification');
         $this->assertDatabaseCount('posts', 0);
     }

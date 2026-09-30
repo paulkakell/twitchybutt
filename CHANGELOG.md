@@ -1,27 +1,22 @@
 # Change log
 
-## 00.03.01 - Product roadmap documentation (review pending)
+## 00.07.02 - Main integration metadata (unreleased)
 
-Classification: additive documentation and contributor tooling; fixes the missing maintainable product backlog. Reference #3, based on PR #2 at b14dc4cf32e693808dcd326496db5336b7721399. Documentation revision is tracked in docs/roadmap/VERSION; root application VERSION remains 00.03.00.
+Classification: fix and additive documentation. References #9, PR #10 and PR #16. The owner requested "Skip the reviews and merge into main". Prepare the cumulative development branch for that source integration without representing pending assessments as completed or approving production use.
 
-Add ROADMAP.md, 100 stable-ID items across ten proposed milestones, 12 open decisions, acceptance criteria, dependencies, an editable native Google Sheets planning copy, an ideas inbox and all 16 release controls. Provide a compact repository snapshot and feature-request/copyable item templates. Distinguish implemented preview work from proposed or released scope. Dates, staffing and effort remain uncommitted; no automatic Sheet/GitHub synchronization is implied.
+Increment VERSION and the release-policy version from 00.07.01 to 00.07.02. Correct README branch/status instructions and add integration, compatibility, validation and rollback notes. Preserve the earlier CodeQL contact-link remediation on main (`2d2684991ee2ee39ae2aeb9470c15903ca2327e6`) and the development baseline (`e433576fc50900d105512e1b0e443f371668ab4d`).
 
-Add a dependency/ID validator with 13 regression tests and rerun full existing read-only CI. No runtime behavior, dependency lock, schema, secret or payment configuration changes. Exact commit and validation evidence are attached to the roadmap PR and Drive revision report. No application tag, main merge or deployment is included.
+No runtime implementation, API, dependency, lockfile, schema, feature-default, scanner rule or release-threshold change relative to the development baseline. All four production review records remain pending. Skipping reviews for this merge does not supply missing security evidence. No release tag or production artifact is issued. Existing application/security/repository suites must run on the integration candidate; results belong to their exact commit and are recorded in PR #10.
 
-## 00.03.00 - Application foundation (unreleased)
+## 00.07.01 - Media validation repair (unreleased)
 
-Classification: additive foundation with construction fixes. Reference #1. Requirements baseline 00.02.00. No existing deployed API or database is changed.
+Classification: fix. Reference #9. Baseline 00.07.00 at 21b6757e022b2cfc78ddb997410e82ad5a6e78da. Explicitly install GD/FFmpeg on disposable CI runners and record package/tool versions; the earlier runner omitted required tools and skipped application execution. Keep all prerequisite assertions instead of skipping media tests.
 
-Add Laravel 13 structure, member/session authentication, local administrator provisioning, classified text posts and creator studio, private paid-body authorization, exact 200-basis-point integer quote calculation, immutable invoice snapshots, idempotency and anonymous report intake. These changes make the initial requirements executable without pretending that settlement exists.
+Correct the subprocess-environment test to create and restore its own synthetic library-path fixture instead of assuming a portable local runtime. Add actual child-process environment checks with present and absent library overrides, including getenv, server and environment secret sources. No secret values or subprocess environment output are retained as artifacts.
 
-Add disabled-feature guards, escaped templates, CSRF/rate limits, security headers, structured private logs, SQLite/PostgreSQL schema, reversible development migrations, dependency locks, tests, CI and operator/rollback documentation. Fee rounding floors the license share; the creator receives the remainder. No tax/refund behavior is implied.
+No application dependency, schema, fee or feature-default change. Existing private-media, MFA and access boundaries remain enforced. Update current documentation and record failed runs by commit. Full SQLite/PostgreSQL, SMTP/HTTP/MFA/media/concurrency, fresh build, style/type and security checks are required on the final candidate. Above-Low findings and incomplete security reviews still prohibit release.
 
-Fix missing Mockery discovered in CI; reject malformed email arrays, null-byte passwords and inputs above bcrypt's byte limit. Enforce 64-bit amounts and production persistent-state settings. Correct test-environment cache/session isolation without weakening rate limits. Preserve failed-run evidence. Pin Node24 checkout and the PostgreSQL image digest, then remove dependency-bootstrap repository-write jobs after the lock is committed.
 
-Key commits: initial application 88cbd860cdba41916c91b6fa45a057f162668687; initial lock 79a8ad97af85cd77237b16d5d8e7d0bf9748e64c; credential/test correction a469015379db0053bcb79e2f46a1d7096b1449f7; corrected lock 989170c543fac00c3dc27df660184699cc84c669. Final commit and executed validation are recorded in the PR and Drive report.
+## Earlier increments
 
-No real funds, blockchain contract, treasury configuration, production deployment, main merge or release tag is included.
-
-## 00.02.00 - Requirements baseline
-
-Content-neutral creator software permitting lawful adult content; Utah licensor jurisdiction; creator-owned infrastructure; 2% fee through supported crypto checkout. Requirements only; prior versioned documentation packages remain available.
+[Complete change-log history through 00.07.00](docs/changelog/through-00.07.00.md) is preserved without editing earlier entries. No prior release or security approval is implied.
